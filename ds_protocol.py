@@ -14,14 +14,18 @@ def extract_json(json_msg:str) -> response:
   '''
   try:
     json_obj = json.loads(json_msg)
+  except json.JSONDecodeError:
+    print("Json cannot be decoded.")
+  try:
     type = json_obj['response']['type']
     message = json_obj['response']['message']
     try:
       token = json_obj['response']['token']
     except KeyError:
       token = ""
-  except json.JSONDecodeError:
-    print("Json cannot be decoded.")
+  except KeyError:
+    message = json_obj['response']['messages']
+    token = ""
 
   return response(type, message,token)
 
@@ -58,3 +62,4 @@ def encode_json(type: str, entry1 = "", entry2 = "", entry3 = "", token = None) 
 
 if __name__ == "__main__":
   encode_json("unread_message", token = "token")
+  print(extract_json("{\"response\": {\"type\": \"ok\", \"messages\": [{\"message\":\"Hello User 1!\", \"from\":\"markb\", \"timestamp\":\"1603167689.3928561\"},{\"message\":\"Bzzzzz\", \"from\":\"thebeemoviescript\", \"timestamp\":\"1603167689.3928561\"}]}}"))
