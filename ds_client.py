@@ -74,9 +74,6 @@ def _read_command(f_recv: TextIO, login = True) -> str:
     if login: print("[SERVER MESSAGE] " + s.type + ": " + s.message)
     return s.token
 
-def _return_response(f_recv: TextIO):
-    return dsp.extract_json(f_recv.readline()[:-1])
-
 
 def _write_command(cmd: str, f_send: TextIO) -> bool:
   '''

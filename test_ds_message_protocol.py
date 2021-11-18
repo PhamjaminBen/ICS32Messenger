@@ -1,3 +1,7 @@
+# BENJAMIN PHAM
+# BENJADP1@UCI.EDU
+# 53569186
+
 import ds_protocol, unittest
 
 class CommandTestBase(unittest.TestCase):
@@ -26,7 +30,7 @@ class CommandTestBase(unittest.TestCase):
     self.assertEqual(d1, ds_protocol.response("ok", "Direct message sent", ""))
 
     d1 = ds_protocol.extract_json("{\"response\": {\"type\": \"ok\", \"messages\": [{\"message\":\"Hello User 1!\", \"from\":\"markb\", \"timestamp\":\"1603167689.3928561\"},{\"message\":\"Bzzzzz\", \"from\":\"thebeemoviescript\", \"timestamp\":\"1603167689.3928561\"}]}}")
-    self.assertEqual(d1, ds_protocol.response("ok", [{'message': 'Hello User 1!', 'from': 'markb', 'timestamp': '1603167689.3928561'}, {'message': 'Bzzzzz', 'from': 'thebeemoviescript', 'timestamp': '1603167689.3928561'}],""))
+    self.assertEqual(d1, ds_protocol.response("ok", {'message': 'Hello User 1!', 'from': 'markb', 'timestamp': '1603167689.3928561'}, {'message': 'Bzzzzz', 'from': 'thebeemoviescript', 'timestamp': '1603167689.3928561'},""))
 
 if __name__ == '__main__':
   unittest.main()
