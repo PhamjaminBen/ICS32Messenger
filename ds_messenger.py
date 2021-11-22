@@ -38,7 +38,7 @@ class DirectMessenger:
     Connects to the server using a socket, and attempts to send a message
     returns true if message successfully sent, false if send failed.
     '''
-    self.log_in()
+    if not self.log_in(): return False
     message = DirectMessage(recipient,message, time.time())
     
     if not self._write_command(dsp.encode_json("directmessage", message.message,message.recipient, message.timestamp, self.token), self.f_send):
@@ -53,14 +53,14 @@ class DirectMessenger:
     '''
     logs account into the server
     '''
-    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client.settimeout(5) #If socket can't connect in 5 seconds, error will be thrown
+    self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    self.client.settimeout(5) #If socket can't connect in 5 seconds, error will be thrown
 
     #connecting to server, encoding is automatically done through these files
     try:
-      client.connect((self.dsuserver,3021))
-      self.f_send = client.makefile('w')
-      self.f_recv = client.makefile('r')
+      self.client.connect((self.dsuserver,3021))
+      self.f_send = self.client.makefile('w')
+      self.f_recv = self.client.makefile('r')
     except socket.error:
       print("ERROR: Invalid socket connection/ip address")
       return False
@@ -68,6 +68,8 @@ class DirectMessenger:
     if not self._write_command(dsp.encode_json("join", self.username,self.password), self.f_send): return False
     self.token = self._read_command(self.f_recv)
     if self.token == "": return False
+
+    return True
 
 
 
@@ -101,31 +103,57 @@ class DirectMessenger:
     '''
     returns a list of DirectMessage objects containing all new messages
     '''
-    self.log_in()
+    if not self.log_in():
+      return []
 
-    #populate the DirectMessages list with all new ones
-    DirectMessages = []
+    #populate the new_messages list with all new ones
+    new_messages = []
     self._write_command(dsp.encode_json("unread_message", token = self.token), self.f_send)
     s = self._read_command(self.f_recv, get_all= True).message
     for message in s:
-      DirectMessages.append(DirectMessage(self.username, message['message'], message['timestamp']))
+      new_messages.append(DirectMessage(self.username, message['message'], message['timestamp']))
 
-    return DirectMessages
+    self.client.close()
+    return new_messages
 
     
  
   def retrieve_all(self) -> list:
-    # returns a list of DirectMessage objects containing all messages
-    pass
+    '''
+    returns a list of DirectMessage objects containing all messages
+    '''
+    if not self.log_in():
+      return []
+    
+    #populate all messages list
+    all_messages = []
+    self._write_command(dsp.encode_json("all_messages", token = self.token), self.f_send)
+    s = self._read_command(self.f_recv, get_all= True).message
+    for message in s:
+      all_messages.append(DirectMessage(self.username, message['message'],message['timestamp']))
+    
+    self.client.close()
+    return all_messages
 
 if __name__ == "__main__":
     messenger = DirectMessenger("168.235.86.101", "username", "password")
-    print(messenger.send("hello","benP"))
-    print(messenger.send("shut up","benP"))
-    print(messenger.send("wfaf","benP"))
-    print(messenger.send("giojoeig","benP"))
-    print(messenger.send("POOP","benP"))
+    messenger.send("hello","benP")
+    messenger.send("shut up","benP")
+
+
     messenger = DirectMessenger("168.235.86.101", "benP", "waytomad")
-    print(messenger.send("hi","username"))
     for message in messenger.retrieve_new():
+      print(message)
+    
+    print("---------")
+    messenger = DirectMessenger("168.235.86.101", "username", "password")
+    print(messenger.send("33","benP"))
+    messenger = DirectMessenger("168.235.86.101", "benP", "waytomad")
+
+    print(messenger.retrieve_new())
+    # for message in messenger.retrieve_new():
+    #   print(message)
+
+    print("all")
+    for message in messenger.retrieve_all():
       print(message)
