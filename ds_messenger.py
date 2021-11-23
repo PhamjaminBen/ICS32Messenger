@@ -23,6 +23,9 @@ class DirectMessage:
 
 
 class DirectMessenger:
+  '''
+  DirectMessenger class represents a user who is using the messenging platform
+  '''
   def __init__(self, dsuserver=None, username=None, password=None):
     self.token = None
     self.dsuserver = dsuserver
@@ -49,9 +52,10 @@ class DirectMessenger:
       return True
     
 
-  def log_in(self):
+  def log_in(self) -> bool:
     '''
     logs account into the server
+    returns True if succesful login, false otherwise
     '''
     self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     self.client.settimeout(5) #If socket can't connect in 5 seconds, error will be thrown
@@ -87,7 +91,7 @@ class DirectMessenger:
 
   def _write_command(self,cmd: str, f_send) -> bool:
     '''
-    sends data to server using json
+    Sends data to server in json format
     '''
     try:
         self.f_send.write((json.dumps(cmd) + "\r\n"))
