@@ -21,6 +21,7 @@
 
 import json, time, os
 from pathlib import Path
+from ds_messenger import DirectMessage
 
 
 """
@@ -164,6 +165,7 @@ class Profile:
         if os.path.exists(p) and p.suffix == '.dsu':
             try:
                 f = open(p, 'w')
+                print(self.__dict__)
                 json.dump(self.__dict__, f)
                 f.close()
             except Exception as ex:
@@ -190,6 +192,7 @@ class Profile:
             try:
                 f = open(p, 'r')
                 obj = json.load(f)
+                print(obj)
                 self.username = obj['username']
                 self.password = obj['password']
                 self.dsuserver = obj['dsuserver']
@@ -200,9 +203,14 @@ class Profile:
                 for post_obj in obj['_posts']:
                     post = Post(post_obj['entry'], post_obj['timestamp'])
                     self._posts.append(post)
-                self.recipients = obj['recipients']
+                for recipient in obj['recipients'].keys():
+                    self.recipients[recipient] = []
+                    for message in obj['recipients'][recipient]:
+                        self.recipients[recipient].append(DirectMessage(message['recipient'],message['message'],message['timestamp']))
+
                 f.close()
             except Exception as ex:
                 raise DsuProfileError(ex)
         else:
             raise DsuFileError()
+    

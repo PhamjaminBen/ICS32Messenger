@@ -9,7 +9,7 @@ import time, socket, json
 from json.decoder import JSONDecodeError
 import ds_protocol as dsp
 
-class DirectMessage:
+class DirectMessage(dict):
   '''
   DirectMessage class stores data pertaining to a direct message
   '''
@@ -17,6 +17,7 @@ class DirectMessage:
     self.recipient = recipient
     self.message = message
     self.timestamp = timestamp
+    dict.__init__(self, recipient = self.recipient, message = self.message, timestamp = self.timestamp)
 
   def __repr__(self) -> str:
       return f"Recipient: {self.recipient}, Message: {self.message}, Timestamp: {self.timestamp}"
