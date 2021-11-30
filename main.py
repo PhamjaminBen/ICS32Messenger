@@ -14,7 +14,7 @@
 
 
 import tkinter as tk
-from tkinter import ttk, filedialog
+from tkinter import ttk, filedialog, simpledialog
 from tkinter.constants import N
 from Profile import Post, Profile
 import time
@@ -30,19 +30,19 @@ class Body(tk.Frame):
         self._select_callback = select_callback
 
         # a list of the Post objects available in the active DSU file
-        self._posts = [Post]
+        self._users = [Post]
         
         # After all initialization is complete, call the _draw method to pack the widgets
         # into the Body instance 
         self._draw()
     
     """
-    Update the entry_editor with the full post entry when the corresponding node in the posts_tree
+    Update the entry_editor with the full post entry when the corresponding node in the users_tree
     is selected.
     """
     def node_select(self, event):
-        index = int(self.posts_tree.selection()[0])
-        entry = self._posts[index].entry
+        index = int(self.users_tree.selection()[0])
+        entry = "test"
         self.set_text_entry(entry)
     
     """
@@ -61,28 +61,28 @@ class Body(tk.Frame):
         self.entry_editor.replace("1.0","end", text)
     
     """
-    Populates the self._posts attribute with posts from the active DSU file.
+    Populates the self._users attribute with posts from the active DSU file.
     """
-    def set_posts(self, posts:list):
-        # TODO: Write code to populate self._posts with the post data passed
+    def set_users(self, users:list):
+        # TODO: Write code to populate self._users with the post data passed
         # in the posts parameter and repopulate the UI with the new post entries.
         # HINT: You will have to write the delete code yourself, but you can take 
-        # advantage of the self.insert_posttree method for updating the posts_tree
+        # advantage of the self.insert_usertree method for updating the users_tree
         # widget.
-        for post in posts:
-            self._posts = []
-            for item in self.posts_tree.get_children():
-                self.posts_tree.delete(item)
-            self.insert_post(post)
+        for user in users:
+            self._users = []
+            for item in self.users_tree.get_children():
+                self.users_tree.delete(item)
+            self.insert_user(user)
             
 
     """
     Inserts a single post to the post_tree widget.
     """
-    def insert_post(self, post: Post):
-        self._posts.append(post)
-        id = len(self._posts) - 1 #adjust id for 0-base of treeview widget
-        self._insert_post_tree(id, post)
+    def insert_user(self, user: str):
+        self._users.append(user)
+        id = len(self._users) - 1 #adjust id for 0-base of treeview widget
+        self._insert_user_tree(id, user)
 
 
     """
@@ -92,21 +92,20 @@ class Body(tk.Frame):
     def reset_ui(self):
         self.set_text_entry("")
         self.entry_editor.configure(state=tk.NORMAL)
-        self._posts = []
-        for item in self.posts_tree.get_children():
-            self.posts_tree.delete(item)
+        self._users = []
+        for item in self.users_tree.get_children():
+            self.users_tree.delete(item)
 
     """
-    Inserts a post entry into the posts_tree widget.
+    Inserts a post entry into the users_tree widget.
     """
-    def _insert_post_tree(self, id, post: Post):
-        entry = post.entry
+    def _insert_user_tree(self, id, user: Post):
         # Since we don't have a title, we will use the first 24 characters of a
         # post entry as the identifier in the post_tree widget.
-        if len(entry) > 25:
-            entry = entry[:24] + "..."
+        if len(user) > 25:
+            user = user[:24] + "..."
         
-        self.posts_tree.insert('', id, id, text=entry)
+        self.users_tree.insert('', id, id, text=user)
     
     """
     Call only once upon initialization to add widgets to the frame
@@ -114,9 +113,9 @@ class Body(tk.Frame):
     def _draw(self):
         posts_frame = tk.Frame(master=self, width=250)
         posts_frame.pack(fill=tk.BOTH, side=tk.LEFT)
-        self.posts_tree = ttk.Treeview(posts_frame)
-        self.posts_tree.bind("<<TreeviewSelect>>", self.node_select)
-        self.posts_tree.pack(fill=tk.BOTH, side=tk.TOP, expand=True, padx=5, pady=0)
+        self.users_tree = ttk.Treeview(posts_frame)
+        self.users_tree.bind("<<TreeviewSelect>>", self.node_select)
+        self.users_tree.pack(fill=tk.BOTH, side=tk.TOP, expand=True, padx=5, pady=0)
 
         entry_frame = tk.Frame(master=self, bg="")
         entry_frame.pack(fill=tk.BOTH, side=tk.TOP, expand=True)
@@ -135,11 +134,7 @@ class Body(tk.Frame):
         entry_editor_scrollbar.pack(fill=tk.Y, side=tk.LEFT, expand=False, padx=0, pady=0)
 
         self.set_text_entry("my name is ben")
-        self.insert_post(Post("allah is great", time.time()))
-        self.insert_post(Post("allah is great", time.time()))
-        self.insert_post(Post("allah is great", time.time()))
-        self.insert_post(Post("allah is great", time.time()))
-        self.insert_post(Post("allah is greo2h98gh3hgoqh40938wh0b938h098whb4098wh34089at", time.time()))
+        self.insert_user("benjamin")
 
 
 """
@@ -187,17 +182,23 @@ class Footer(tk.Frame):
     def set_status(self, message):
         self.footer_label.configure(text=message)
     
+    def get_entry(self) -> str:
+        return self.message_box.get('1.0', 'end').rstrip()
+    
+    def set_entry(self, entry:str):
+        self.message_box.replace("1.0","end", entry)
+
     """
     Call only once upon initialization to add widgets to the frame
     """
     def _draw(self):
-        save_button = tk.Button(master=self, text="Send", width=12)
+        save_button = tk.Button(master=self, text="Send", width=12, height= 20)
         save_button.configure(command=self.send_click)
-        save_button.pack(fill=tk.BOTH, side=tk.RIGHT, padx =0, pady=5)
+        save_button.pack(fill=tk.BOTH, side=tk.RIGHT, padx =0, pady=50)
 
-        user_button = tk.Button(master=self, text = "Add User", width = 12)
+        user_button = tk.Button(master=self, text = "Add User", width = 12, height= 20)
         user_button.configure(command= self.user_click)
-        user_button.pack(fill=tk.BOTH, side=tk.RIGHT, padx =5, pady=5)
+        user_button.pack(fill=tk.BOTH, side=tk.TOP, padx =5, pady=50)
 
         # self.chk_button = tk.Checkbutton(master=self, text="Online", variable=self.is_online)
         # self.chk_button.configure(command=self.online_click) 
@@ -206,8 +207,8 @@ class Footer(tk.Frame):
         # self.footer_label = tk.Label(master=self, text="Ready.")
         # self.footer_label.pack(fill=tk.BOTH, side=tk.LEFT, padx=5)
 
-        self.message_box = tk.Text(height= 0, width= 60)
-        self.message_box.pack(fill=tk.BOTH, side=tk.RIGHT, expand=True, padx=15, pady=10)
+        self.message_box = tk.Text(height= 5, width= 49)
+        self.message_box.pack(fill=tk.BOTH, side=tk.RIGHT, expand=True, padx=10, pady=10)
 
 
 """
@@ -255,7 +256,8 @@ class MainApp(tk.Frame):
         self.body.reset_ui()
         self._current_profile = Profile()
         self._current_profile.load_profile(filename.name)
-        self.body.set_posts(self._current_profile.get_posts())
+        for user in self._current_profile.recipients.keys():
+            self.add_user(self._current_profile.recipients['user'])
 
     
     """                
@@ -267,18 +269,10 @@ class MainApp(tk.Frame):
     """
     Saves the text currently in the entry_editor widget to the active DSU file.
     """
-    def save_profile(self):
-        # TODO: Write code to perform whatever operations are necessary to save a 
-        # post entry when the user clicks the save_button widget.
-        # HINT: You will probably need to do things like create a new Post object,
-        # fill it with text, add it to the active profile, save the profile, and
-        # clear the editor_entry UI for a new post.
-        # This might also be a good place to check if the user has selected the online
-        # checkbox and if so send the message to the server.
-        if self.body.get_text_entry() != "":
-            post = Post(self.body.get_text_entry(), time.time())
-            self.body.insert_post(post)
-            self.body.set_text_entry("")
+    def send_message(self):
+        if self.footer.get_entry() != "":
+            self.body.set_text_entry(self.body.get_text_entry() + "\n" + self.footer.get_entry())
+            self.footer.set_entry("")
         
 
 
@@ -300,7 +294,8 @@ class MainApp(tk.Frame):
             self.footer.set_status("Offline")
     
     def add_user(self):
-      pass
+      user = simpledialog.askstring("Add user", "Please enter username")
+      self.body.insert_user(user)
     
     """
     Call only once, upon initialization to add widgets to root frame
@@ -310,7 +305,7 @@ class MainApp(tk.Frame):
         menu_bar = tk.Menu(self.root)
         self.root['menu'] = menu_bar
         menu_file = tk.Menu(menu_bar)
-        menu_bar.add_cascade(menu=menu_file, label='Recipient')
+        menu_bar.add_cascade(menu=menu_file, label='File')
         menu_file.add_command(label='New', command=self.new_profile)
         menu_file.add_command(label='Open...', command=self.open_profile)
         menu_file.add_command(label='Close', command=self.close)
@@ -326,7 +321,7 @@ class MainApp(tk.Frame):
         # TODO: Add a callback for detecting changes to the online checkbox widget in the Footer class. Follow
         # the conventions established by the existing save_callback parameter.
         # HINT: There may already be a class method that serves as a good callback function!
-        self.footer = Footer(self.root, save_callback=self.save_profile, user_callback= self.add_user)
+        self.footer = Footer(self.root, save_callback=self.send_message, user_callback= self.add_user)
         self.footer.pack(fill=tk.BOTH, side=tk.BOTTOM)
 
 if __name__ == "__main__":
@@ -338,7 +333,7 @@ if __name__ == "__main__":
 
     # This is just an arbitrary starting point. You can change the value around to see how
     # the starting size of the window changes. I just thought this looked good for our UI.
-    main.geometry("720x480")
+    main.geometry("720x580")
 
     # adding this option removes some legacy behavior with menus that modern OSes don't support. 
     # If you're curious, feel free to comment out and see how the menu changes.
