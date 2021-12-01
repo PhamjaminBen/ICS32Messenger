@@ -16,8 +16,9 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog
 from tkinter.constants import N
-from Profile import Post, Profile
+from Profile import Post, Profile, Sender
 import time
+from ds_messenger import DirectMessenger, DirectMessage
 
 """
 A subclass of tk.Frame that is responsible for drawing all of the widgets
@@ -42,7 +43,11 @@ class Body(tk.Frame):
     """
     def node_select(self, event):
         index = int(self.users_tree.selection()[0])
-        entry = "test"
+        thing  = self._users[index]
+        print(thing)
+        entry = ""
+        for message in thing.messages:
+          entry += message.message + '\n'
         self.set_text_entry(entry)
     
     """
@@ -79,10 +84,9 @@ class Body(tk.Frame):
     """
     Inserts a single post to the post_tree widget.
     """
-    def insert_user(self, user: str):
-        self._users.append(user)
+    def insert_user(self, user: Sender):
         id = len(self._users) - 1 #adjust id for 0-base of treeview widget
-        self._insert_user_tree(id, user)
+        self._insert_user_tree(id, user.name)
 
 
     """
@@ -99,7 +103,7 @@ class Body(tk.Frame):
     """
     Inserts a post entry into the users_tree widget.
     """
-    def _insert_user_tree(self, id, user: Post):
+    def _insert_user_tree(self, id, user):
         # Since we don't have a title, we will use the first 24 characters of a
         # post entry as the identifier in the post_tree widget.
         if len(user) > 25:
@@ -132,9 +136,6 @@ class Body(tk.Frame):
         entry_editor_scrollbar = tk.Scrollbar(master=scroll_frame, command=self.entry_editor.yview)
         self.entry_editor['yscrollcommand'] = entry_editor_scrollbar.set
         entry_editor_scrollbar.pack(fill=tk.Y, side=tk.LEFT, expand=False, padx=0, pady=0)
-
-        self.set_text_entry("my name is ben")
-        self.insert_user("benjamin")
 
 
 """
@@ -233,13 +234,17 @@ class MainApp(tk.Frame):
     """
     def new_profile(self):
         filename = tk.filedialog.asksaveasfile(filetypes=[('Distributed Social Profile', '*.dsu')])
-        profile_filename = filename.name
+        self.profile_filename = filename.name
 
         # TODO Write code to perform whatever operations are necessary to prepare the UI for
         # a new DSU file.
         # HINT: You will probably need to do things like generate encryption keys and reset the ui.
         self.body.reset_ui()
         self._current_profile = Profile()
+        name = self.profile_filename[self.profile_filename.rfind("/")+1:-4]
+        self._current_profile.username = name
+        self._current_profile.password = name + "password"
+        self._current_profile.save_profile(self.profile_filename)
     
     """
     Opens an existing DSU file when the 'Open' menu item is clicked and loads the profile
@@ -247,6 +252,7 @@ class MainApp(tk.Frame):
     """
     def open_profile(self):
         filename = tk.filedialog.askopenfile(filetypes=[('Distributed Social Profile', '*.dsu')])
+        self.profile_filename = filename.name
 
         # TODO: Write code to perform whatever operations are necessary to prepare the UI for
         # an existing DSU file.
@@ -256,8 +262,20 @@ class MainApp(tk.Frame):
         self.body.reset_ui()
         self._current_profile = Profile()
         self._current_profile.load_profile(filename.name)
-        for user in self._current_profile.recipients.keys():
-            self.add_user(self._current_profile.recipients['user'])
+        self._current_profile.username = "benP"
+        self._current_profile.password = "waytomad"
+        reciever = DirectMessenger("168.235.86.101", "benP", "waytomad")
+        print(self._current_profile.senders)
+        # for message in reciever.retrieve_all():
+        #   print(message)
+        #   print()
+        #   if message.sender not in self._current_profile.senders.keys():
+        #     self._current_profile.senders[message.sender] = []
+        #   self._current_profile.senders[message.sender].append(message)
+
+        for user in self._current_profile.senders.keys():
+            self.body.insert_user(self._current_profile.senders[user])
+            self.body._users.append(self._current_profile.senders[user])
 
     
     """                
@@ -267,12 +285,13 @@ class MainApp(tk.Frame):
         self.root.destroy()
 
     """
-    Saves the text currently in the entry_editor widget to the active DSU file.
+    Sends a message
     """
     def send_message(self):
         if self.footer.get_entry() != "":
             self.body.set_text_entry(self.body.get_text_entry() + "\n" + self.footer.get_entry())
             self.footer.set_entry("")
+            self._current_profile.save_profile(self.profile_filename)
         
 
 
@@ -296,6 +315,9 @@ class MainApp(tk.Frame):
     def add_user(self):
       user = simpledialog.askstring("Add user", "Please enter username")
       self.body.insert_user(user)
+      if user not in self._current_profile.senders.keys():
+        self._current_profile.senders[user] = (Sender(user, []))
+        self.body._users.append(Sender(user,[]))
     
     """
     Call only once, upon initialization to add widgets to root frame

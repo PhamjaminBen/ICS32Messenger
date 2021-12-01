@@ -21,6 +21,7 @@
 
 import json, time, os
 from pathlib import Path
+from typing import List
 from ds_messenger import DirectMessage
 
 """
@@ -83,6 +84,20 @@ class Post(dict):
     """ 
     entry = property(get_entry, set_entry)
     timestamp = property(get_time, set_time)
+
+class Sender(dict):
+
+  def __init__(self, name: str, messages: list[DirectMessage] = []):
+    self.messages = messages
+    self.name = name
+    dict.__init__(self, name = self.name, messages = self.messages)
+
+  def get_messages(self):
+    return self.messages
+  
+  def add_message(self, message: DirectMessage):
+    self.messages.append(message)
+    dict.__setitem__(self, 'messages', self.messages)
     
     
 class Profile:
@@ -107,7 +122,7 @@ class Profile:
         self.zipcode = "92612"   # OPTIONAL, defualts to Irvine
         self.countrycode = "us"  # OPTIONAL, defualts to the USA
         self.searchterm = "book" # OPTIONAL, defualts to "book"
-        self.recipients = {}     # OPTIONAL
+        self.senders = {}     # OPTIONAL
     
     """
 
@@ -145,7 +160,9 @@ class Profile:
     """
     def get_posts(self) -> list:
         return self._posts
-
+    
+    def get_senders(self) -> list[Sender]:
+      return self.senders
     """
 
     save_profile accepts an existing dsu file to save the current instance of Profile to the file system.
@@ -200,7 +217,12 @@ class Profile:
                 for post_obj in obj['_posts']:
                     post = Post(post_obj['entry'], post_obj['timestamp'])
                     self._posts.append(post)
-                self.recipients = obj['recipients']
+                for sender,messages in obj['senders'].items():
+                    s = Sender(sender, [])
+                    for message in messages:
+                      # print(DirectMessage(message['recipient'],message['message'], message['timestamp'], message['sender']))
+                      s.messages.append(DirectMessage(message['recipient'],message['message'], message['timestamp'], message['sender']))
+                    self.senders[sender] = s
                 f.close()
             except Exception as ex:
                 raise DsuProfileError(ex)

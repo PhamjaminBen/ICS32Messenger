@@ -13,14 +13,15 @@ class DirectMessage(dict):
   '''
   DirectMessage class stores data pertaining to a direct message
   '''
-  def __init__(self,recipient = None, message = None, timestamp = None):
+  def __init__(self,recipient = None, message = None, timestamp = None, sender = None):
     self.recipient = recipient
     self.message = message
     self.timestamp = timestamp
-    dict.__init__(self, recipient = self.recipient, message = self.message, timestamp = self.timestamp)
+    self.sender = sender
+    dict.__init__(self, recipient = self.recipient, message = self.message, timestamp = self.timestamp, sender = self.sender)
 
   def __repr__(self) -> str:
-      return f"Recipient: {self.recipient}, Message: {self.message}, Timestamp: {self.timestamp}"
+      return f"Recipient: {self.recipient}, Message: {self.message}, Timestamp: {self.timestamp}, Sender: {self.sender}"
 
 
 class DirectMessenger:
@@ -73,7 +74,6 @@ class DirectMessenger:
     if not self._write_command(dsp.encode_json("join", self.username,self.password), self.f_send): return False
     self.token = self._read_command(self.f_recv)
     if self.token == "": return False
-
     return True
 
 
@@ -116,7 +116,7 @@ class DirectMessenger:
     self._write_command(dsp.encode_json("unread_message", token = self.token), self.f_send)
     s = self._read_command(self.f_recv, get_all= True).message
     for message in s:
-      new_messages.append(DirectMessage(self.username, message['message'], message['timestamp']))
+      new_messages.append(DirectMessage(self.username, message['message'], message['timestamp'], message['from']))
 
     self.client.close()
     return new_messages
@@ -135,7 +135,7 @@ class DirectMessenger:
     self._write_command(dsp.encode_json("all_messages", token = self.token), self.f_send)
     s = self._read_command(self.f_recv, get_all= True).message
     for message in s:
-      all_messages.append(DirectMessage(self.username, message['message'],message['timestamp']))
+      all_messages.append(DirectMessage(self.username, message['message'],message['timestamp'], message['from']))
     
     self.client.close()
     return all_messages
