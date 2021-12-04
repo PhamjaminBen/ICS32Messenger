@@ -7,12 +7,14 @@
 # 
 # The following module provides a graphical user interface shell for the DSP journaling program.
 
+# MODIFIED BY BENJAMIN FOR FINAL PROJECT
 # BENJAMIN PHAM
 # BENJADP1@UCI.EDU
 # 53569186
 
 
 
+from os import error
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog
 from tkinter.constants import N
@@ -20,101 +22,94 @@ from Profile import Post, Profile, Sender
 import time
 from ds_messenger import DirectMessenger, DirectMessage
 
-"""
-A subclass of tk.Frame that is responsible for drawing all of the widgets
-in the body portion of the root frame.
-"""
+
 class Body(tk.Frame):
+    """
+    A subclass of tk.Frame that is responsible for drawing all of the widgets
+    in the body portion of the root frame.
+    """
     def __init__(self, root, select_callback=None):
         tk.Frame.__init__(self, root)
         self.root = root
         self._select_callback = select_callback
 
-        # a list of the Post objects available in the active DSU file
-        self._users = [Post]
+        # a list of the user objects available in the active DSU file
+        self._users = []
         
         # After all initialization is complete, call the _draw method to pack the widgets
         # into the Body instance 
         self._draw()
     
-    """
-    Update the entry_editor with the full post entry when the corresponding node in the users_tree
-    is selected.
-    """
     def node_select(self, event):
-        index = int(self.users_tree.selection()[0])
-        thing  = self._users[index]
-        print(thing)
+        """
+        Update the entry_editor with the full post entry when the corresponding node in the users_tree
+        is selected.
+        """
+        self.current_index = int(self.users_tree.selection()[0])
+        user  = self._users[self.current_index]
         entry = ""
-        for message in thing.messages:
-          entry += message.message + '\n'
+        for message in user.messages:
+          entry += f'{user.name}: {message.message}\n'
         self.set_text_entry(entry)
     
-    """
-    Returns the text that is currently displayed in the entry_editor widget.
-    """
+
     def get_text_entry(self) -> str:
+        """
+        Returns the text that is currently displayed in the entry_editor widget.
+        """
         return self.entry_editor.get('1.0', 'end').rstrip()
 
-    """
-    Sets the text to be displayed in the entry_editor widget.
-    NOTE: This method is useful for clearing the widget, just pass an empty string.
-    """
+
     def set_text_entry(self, text:str):
-        # TODO: Write code to that deletes all current text in the self.entry_editor widget
-        # and inserts the value contained within the text parameter.
-        self.entry_editor.replace("1.0","end", text)
+      """
+      Sets the text to be displayed in the entry_editor widget.
+      NOTE: This method is useful for clearing the widget, just pass an empty string.
+      """
+      self.entry_editor.replace("1.0","end", text)
     
-    """
-    Populates the self._users attribute with posts from the active DSU file.
-    """
     def set_users(self, users:list):
-        # TODO: Write code to populate self._users with the post data passed
-        # in the posts parameter and repopulate the UI with the new post entries.
-        # HINT: You will have to write the delete code yourself, but you can take 
-        # advantage of the self.insert_usertree method for updating the users_tree
-        # widget.
+        """
+        Populates the self._users attribute with posts from the active DSU file.
+        """
         for user in users:
             self._users = []
             for item in self.users_tree.get_children():
                 self.users_tree.delete(item)
             self.insert_user(user)
             
-
-    """
-    Inserts a single post to the post_tree widget.
-    """
     def insert_user(self, user: Sender):
+        """
+        Inserts a single post to the post_tree widget.
+        """
+        self._users.append(user)
         id = len(self._users) - 1 #adjust id for 0-base of treeview widget
         self._insert_user_tree(id, user.name)
 
-
-    """
-    Resets all UI widgets to their default state. Useful for when clearing the UI is neccessary such
-    as when a new DSU file is loaded, for example.
-    """
     def reset_ui(self):
+        """
+        Resets all UI widgets to their default state. Useful for when clearing the UI is neccessary such
+        as when a new DSU file is loaded, for example.
+        """
         self.set_text_entry("")
         self.entry_editor.configure(state=tk.NORMAL)
         self._users = []
         for item in self.users_tree.get_children():
             self.users_tree.delete(item)
 
-    """
-    Inserts a post entry into the users_tree widget.
-    """
     def _insert_user_tree(self, id, user):
-        # Since we don't have a title, we will use the first 24 characters of a
-        # post entry as the identifier in the post_tree widget.
+        """
+        Inserts a user entry into the users_tree widget.
+        """
+        #if username is too long, then cuti f off
         if len(user) > 25:
             user = user[:24] + "..."
         
         self.users_tree.insert('', id, id, text=user)
     
-    """
-    Call only once upon initialization to add widgets to the frame
-    """
     def _draw(self):
+        """
+        Call only once upon initialization to add widgets to the frame
+        """
         posts_frame = tk.Frame(master=self, width=250)
         posts_frame.pack(fill=tk.BOTH, side=tk.LEFT)
         self.users_tree = ttk.Treeview(posts_frame)
@@ -138,11 +133,12 @@ class Body(tk.Frame):
         entry_editor_scrollbar.pack(fill=tk.Y, side=tk.LEFT, expand=False, padx=0, pady=0)
 
 
-"""
-A subclass of tk.Frame that is responsible for drawing all of the widgets
-in the footer portion of the root frame.
-"""
+
 class Footer(tk.Frame):
+    """
+    A subclass of tk.Frame that is responsible for drawing all of the widgets
+    in the footer portion of the root frame.
+    """
     def __init__(self, root, save_callback=None, user_callback = None):
         tk.Frame.__init__(self, root)
         self.root = root
@@ -158,41 +154,38 @@ class Footer(tk.Frame):
         # into the Footer instance 
         self._draw()
     
-    """
-    Calls the callback function specified in the online_callback class attribute, if
-    available, when the chk_button widget has been clicked.
-    """
     def user_click(self):
-        # TODO: Add code that implements a callback to the chk_button click event.
-        # The callback should support a single parameter that contains the value
-        # of the self.is_online widget variable.
+        """
+        Calls the callback function specified in the user class attribute, if
+        available, when the add user button has been clicked.
+        """
         if self._user_callback is not None:
             self._user_callback()
 
-    """
-    Calls the callback function specified in the save_callback class attribute, if
-    available, when the save_button has been clicked.
-    """
     def send_click(self):
+        """
+        Calls the callback function specified in the save_callback class attribute, if
+        available, when the save_button has been clicked.
+        """
         if self._save_callback is not None:
             self._save_callback()
-
-    """
-    Updates the text that is displayed in the footer_label widget
-    """
-    def set_status(self, message):
-        self.footer_label.configure(text=message)
     
     def get_entry(self) -> str:
+        '''
+        Retrieves the current entry in the message box
+        '''
         return self.message_box.get('1.0', 'end').rstrip()
     
     def set_entry(self, entry:str):
+        '''
+        Changes the entry of the message box
+        '''
         self.message_box.replace("1.0","end", entry)
 
-    """
-    Call only once upon initialization to add widgets to the frame
-    """
     def _draw(self):
+        """
+        Call only once upon initialization to add widgets to the frame
+        """
         save_button = tk.Button(master=self, text="Send", width=12, height= 20)
         save_button.configure(command=self.send_click)
         save_button.pack(fill=tk.BOTH, side=tk.RIGHT, padx =0, pady=50)
@@ -212,12 +205,12 @@ class Footer(tk.Frame):
         self.message_box.pack(fill=tk.BOTH, side=tk.RIGHT, expand=True, padx=10, pady=10)
 
 
-"""
-A subclass of tk.Frame that is responsible for drawing all of the widgets
-in the main portion of the root frame. Also manages all method calls for
-the NaClProfile class.
-"""
 class MainApp(tk.Frame):
+    """
+    A subclass of tk.Frame that is responsible for drawing all of the widgets
+    in the main portion of the root frame. Also manages all method calls for
+    the NaClProfile class.
+    """
     def __init__(self, root):
         tk.Frame.__init__(self, root)
         self.root = root
@@ -229,10 +222,10 @@ class MainApp(tk.Frame):
         # into the root frame
         self._draw()
 
-    """
-    Creates a new DSU file when the 'New' menu item is clicked.
-    """
     def new_profile(self):
+        """
+        Creates a new DSU file when the 'New' menu item is clicked.
+        """
         filename = tk.filedialog.asksaveasfile(filetypes=[('Distributed Social Profile', '*.dsu')])
         self.profile_filename = filename.name
 
@@ -244,13 +237,14 @@ class MainApp(tk.Frame):
         name = self.profile_filename[self.profile_filename.rfind("/")+1:-4]
         self._current_profile.username = name
         self._current_profile.password = name + "password"
+        self.messenger = DirectMessenger("168.235.86.101", self._current_profile.username,self._current_profile.password)
         self._current_profile.save_profile(self.profile_filename)
     
-    """
-    Opens an existing DSU file when the 'Open' menu item is clicked and loads the profile
-    data into the UI.
-    """
     def open_profile(self):
+        """
+        Opens an existing DSU file when the 'Open' menu item is clicked and loads the profile
+        data into the UI.
+        """
         filename = tk.filedialog.askopenfile(filetypes=[('Distributed Social Profile', '*.dsu')])
         self.profile_filename = filename.name
 
@@ -262,9 +256,7 @@ class MainApp(tk.Frame):
         self.body.reset_ui()
         self._current_profile = Profile()
         self._current_profile.load_profile(filename.name)
-        self._current_profile.username = "benP"
-        self._current_profile.password = "waytomad"
-        reciever = DirectMessenger("168.235.86.101", "benP", "waytomad")
+        self.messenger = DirectMessenger("168.235.86.101", self._current_profile.username,self._current_profile.password)
         print(self._current_profile.senders)
         # for message in reciever.retrieve_all():
         #   print(message)
@@ -275,54 +267,60 @@ class MainApp(tk.Frame):
 
         for user in self._current_profile.senders.keys():
             self.body.insert_user(self._current_profile.senders[user])
-            self.body._users.append(self._current_profile.senders[user])
 
     
-    """                
-    Closes the program when the 'Close' menu item is clicked.
-    """
     def close(self):
+        """                
+        Closes the program when the 'Close' menu item is clicked.
+        """
         self.root.destroy()
 
-    """
-    Sends a message
-    """
     def send_message(self):
+        """
+        Sends a message to the server
+        """
         if self.footer.get_entry() != "":
-            self.body.set_text_entry(self.body.get_text_entry() + "\n" + self.footer.get_entry())
+          try:
+            user  = self.body._users[self.body.current_index]
+          except:
+            print("exception")
+          else:
+            user  = self.body._users[self.body.current_index]
+            self.messenger.send(self.footer.get_entry(), user.name)
+            self.body.set_text_entry(f'{self.body.get_text_entry()}\n{self._current_profile.username}: {self.footer.get_entry()}')
             self.footer.set_entry("")
-            self._current_profile.save_profile(self.profile_filename)
+
+          
+          # self.body.set_text_entry(self.body.get_text_entry() + "\n" + self.footer.get_entry())
+          # self.footer.set_entry("")
+          # self._current_profile.save_profile(self.profile_filename)
         
 
 
 
-    """
-    A callback function for responding to changes to the online chk_button.
-    """
     def online_changed(self, value:bool):
-        # TODO: 
-        # 1. Remove the existing code. It has been left here to demonstrate
-        # how to change the text displayed in the footer_label widget and
-        # assist you with testing the callback functionality (if the footer_label
-        # text changes when you click the chk_button widget, your callback is working!).
-        # 2. Write code to support only sending posts to the DSU server when the online chk_button
-        # is checked.
+        """
+        A callback function for responding to changes to the online chk_button.
+        """
         if value:
             self.footer.set_status("Online")
         else:
             self.footer.set_status("Offline")
     
     def add_user(self):
-      user = simpledialog.askstring("Add user", "Please enter username")
-      self.body.insert_user(user)
-      if user not in self._current_profile.senders.keys():
-        self._current_profile.senders[user] = (Sender(user, []))
-        self.body._users.append(Sender(user,[]))
+      '''
+      Adds a user to the profile, by prompting the user for a username
+      '''
+      usern = simpledialog.askstring("Add user", "Please enter username")
+      if usern not in self._current_profile.senders.keys():
+        self._current_profile.senders[usern] = (Sender(usern, []))
+        self.body.insert_user(Sender(usern,[]))
+        self._current_profile.save_profile(self.profile_filename)
     
-    """
-    Call only once, upon initialization to add widgets to root frame
-    """
     def _draw(self):
+        """
+        Call only once, upon initialization to add widgets to root frame
+        """
         # Build a menu and add it to the root frame.
         menu_bar = tk.Menu(self.root)
         self.root['menu'] = menu_bar
@@ -345,6 +343,24 @@ class MainApp(tk.Frame):
         # HINT: There may already be a class method that serves as a good callback function!
         self.footer = Footer(self.root, save_callback=self.send_message, user_callback= self.add_user)
         self.footer.pack(fill=tk.BOTH, side=tk.BOTTOM)
+    
+    def check(self):
+      '''
+      Function to continually check for messages
+      '''
+      try:
+        new_msgs = self.messenger.retrieve_new()
+      except: pass
+      else:
+        if len(new_msgs) != None:
+          for message in new_msgs:
+            if message.sender not in self._current_profile.senders.keys():
+              sndr = Sender(message.sender,[])
+              self._current_profile.senders[message.sender] = [sndr]
+              self.body.insert_user(sndr)
+            self._current_profile.senders[message.sender].add_message(message)
+
+      main.after(1000,self.check)
 
 if __name__ == "__main__":
     # All Tkinter programs start with a root window. We will name ours 'main'.
@@ -364,7 +380,7 @@ if __name__ == "__main__":
     # Initialize the MainApp class, which is the starting point for the widgets used in the program.
     # All of the classes that we use, subclass Tk.Frame, since our root frame is main, we initialize 
     # the class with it.
-    MainApp(main)
+    mapp = MainApp(main)
 
     # When update is called, we finalize the states of all widgets that have been configured within the root frame.
     # Here, Update ensures that we get an accurate width and height reading based on the types of widgets
@@ -374,4 +390,5 @@ if __name__ == "__main__":
     main.update()
     main.minsize(main.winfo_width(), main.winfo_height())
     # And finally, start up the event loop for the program (more on this in lecture).
+    main.after(1000, mapp.check)
     main.mainloop()

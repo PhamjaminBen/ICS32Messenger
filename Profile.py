@@ -136,46 +136,39 @@ class Profile:
     def add_post(self, post: Post) -> None:
         self._posts.append(post)
 
-    """
-
-    del_post removes a Post at a given index and returns True if successful and False if an invalid 
-    index was supplied. 
-
-    To determine which post to delete you must implement your own search operation on the posts 
-    returned from the get_posts function to find the correct index.
-
-    """
 
     def del_post(self, index: int) -> bool:
+        '''
+        del_post removes a Post at a given index and returns True if successful and False if an invalid index was supplied. 
+        '''
         try:
             del self._posts[index]
             return True
         except IndexError:
             return False
-        
-    """
-    
-    get_posts returns the list object containing all posts that have been added to the Profile object
-
-    """
+      
     def get_posts(self) -> list:
-        return self._posts
+      """
+      get_posts returns the list object containing all posts that have been added to the Profile object
+      """
+      return self._posts
     
     def get_senders(self) -> list[Sender]:
       return self.senders
-    """
 
-    save_profile accepts an existing dsu file to save the current instance of Profile to the file system.
-
-    Example usage:
-
-    profile = Profile()
-    profile.save_profile('/path/to/file.dsu')
-
-    Raises DsuFileError
-
-    """
     def save_profile(self, path: str) -> None:
+        """
+
+        save_profile accepts an existing dsu file to save the current instance of Profile to the file system.
+
+        Example usage:
+
+        profile = Profile()
+        profile.save_profile('/path/to/file.dsu')
+
+        Raises DsuFileError
+
+        """
         p = Path(path)
 
         if os.path.exists(p) and p.suffix == '.dsu':
@@ -188,25 +181,26 @@ class Profile:
         else:
             raise DsuFileError("Invalid DSU file path or type")
 
-    """
-
-    load_profile will populate the current instance of Profile with data stored in a DSU file.
-
-    Example usage: 
-
-    profile = Profile()
-    profile.load_profile('/path/to/file.dsu')
-
-    Raises DsuProfileError, DsuFileError
-
-    """
     def load_profile(self, path: str) -> None:
+        """
+
+        load_profile will populate the current instance of Profile with data stored in a DSU file.
+
+        Example usage: 
+
+        profile = Profile()
+        profile.load_profile('/path/to/file.dsu')
+
+        Raises DsuProfileError, DsuFileError
+
+        """
         p = Path(path)
 
         if os.path.exists(p) and p.suffix == '.dsu':
             try:
                 f = open(p, 'r')
                 obj = json.load(f)
+                print(obj)
                 self.username = obj['username']
                 self.password = obj['password']
                 self.dsuserver = obj['dsuserver']
@@ -217,14 +211,14 @@ class Profile:
                 for post_obj in obj['_posts']:
                     post = Post(post_obj['entry'], post_obj['timestamp'])
                     self._posts.append(post)
-                for sender,messages in obj['senders'].items():
+                for sender in obj['senders'].keys():
                     s = Sender(sender, [])
-                    for message in messages:
+                    for message in obj['senders'][sender]['messages']:
                       # print(DirectMessage(message['recipient'],message['message'], message['timestamp'], message['sender']))
                       s.messages.append(DirectMessage(message['recipient'],message['message'], message['timestamp'], message['sender']))
                     self.senders[sender] = s
                 f.close()
-            except Exception as ex:
+            except AttributeError as ex:
                 raise DsuProfileError(ex)
         else:
             raise DsuFileError()

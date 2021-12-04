@@ -48,9 +48,11 @@ class DirectMessenger:
     
     if not self._write_command(dsp.encode_json("directmessage", message.message,message.recipient, message.timestamp, self.token), self.f_send):
       print(self._read_command(self.f_recv))
+      self.client.close()
       return False
     else:
       print(self._read_command(self.f_recv))
+      self.client.close()
       return True
     
 
@@ -114,7 +116,7 @@ class DirectMessenger:
     #populate the new_messages list with all new ones
     new_messages = []
     self._write_command(dsp.encode_json("unread_message", token = self.token), self.f_send)
-    s = self._read_command(self.f_recv, get_all= True).message
+    s = self._read_command(self.f_recv, login = False,get_all= True).message
     for message in s:
       new_messages.append(DirectMessage(self.username, message['message'], message['timestamp'], message['from']))
 
