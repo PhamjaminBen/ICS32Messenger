@@ -74,7 +74,7 @@ class DirectMessenger:
       return False
     
     if not self._write_command(dsp.encode_json("join", self.username,self.password), self.f_send): return False
-    self.token = self._read_command(self.f_recv)
+    self.token = self._read_command(self.f_recv, login = False)
     if self.token == "": return False
     return True
 

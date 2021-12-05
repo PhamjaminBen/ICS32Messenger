@@ -87,17 +87,20 @@ class Post(dict):
 
 class Sender(dict):
 
-  def __init__(self, name: str, messages: list[DirectMessage] = []):
+  def __init__(self, name: str, messages: list[DirectMessage], sent: list[DirectMessage]):
     self.messages = messages
     self.name = name
-    dict.__init__(self, name = self.name, messages = self.messages)
-
-  def get_messages(self):
-    return self.messages
+    self.sent = sent
+    dict.__init__(self, name = self.name, messages = self.messages, sent = self.sent)
   
   def add_message(self, message: DirectMessage):
     self.messages.append(message)
     dict.__setitem__(self, 'messages', self.messages)
+  
+  def add_sent(self, message: DirectMessage):
+    self.sent.append(message)
+    dict.__setitem__(self,'sent',self.sent)
+
     
     
 class Profile:
@@ -212,14 +215,27 @@ class Profile:
                     post = Post(post_obj['entry'], post_obj['timestamp'])
                     self._posts.append(post)
                 for sender in obj['senders'].keys():
-                    s = Sender(sender, [])
+                    list1 = []
                     for message in obj['senders'][sender]['messages']:
                       # print(DirectMessage(message['recipient'],message['message'], message['timestamp'], message['sender']))
-                      s.messages.append(DirectMessage(message['recipient'],message['message'], message['timestamp'], message['sender']))
-                    self.senders[sender] = s
+                      list1.append(DirectMessage(message['recipient'],message['message'], message['timestamp'], message['sender']))
+                    
+                    list2 = []
+                    for message in obj['senders'][sender]['sent']:
+                        list2.append(DirectMessage(message['recipient'],message['message'], message['timestamp'], message['sender']))
+                    self.senders[sender] = Sender(sender,list1,list2)
                 f.close()
             except AttributeError as ex:
                 raise DsuProfileError(ex)
         else:
             raise DsuFileError()
+
+# if __name__ == "__main__":
+#   p = Profile()
+#   p.senders['andy'] = Sender("andy")
+#   p.senders['andy'].add_sent(DirectMessage("andy","hello",time.time(),"ben"))
+#   p.save_profile("C:/Users/BPPC/Downloads/FINALTEST/tester.dsu")
+#   p.load_profile("C:/Users/BPPC/Downloads/FINALTEST/tester.dsu")
+#   print(p.senders)
+
 

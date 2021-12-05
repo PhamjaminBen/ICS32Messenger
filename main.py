@@ -16,10 +16,11 @@
 
 from os import error
 import tkinter as tk
-from tkinter import ttk, filedialog, simpledialog
+from tkinter import ttk, filedialog, simpledialog, Label
 from tkinter.constants import N
 from Profile import Post, Profile, Sender
 import time
+from ds_client import send
 from ds_messenger import DirectMessenger, DirectMessage
 
 
@@ -45,13 +46,39 @@ class Body(tk.Frame):
         Update the entry_editor with the full post entry when the corresponding node in the users_tree
         is selected.
         """
+        print(self.users_tree.selection())
         self.current_index = int(self.users_tree.selection()[0])
         user  = self._users[self.current_index]
-        entry = ""
-        for message in user.messages:
-          entry += f'{user.name}: {message.message}\n'
-        self.set_text_entry(entry)
+        self.process_messages(user)
+        # print(user.messages)
+        # print(user.sent)
+
+        # for message in user.messages:
+        #   entry += f'{user.name}: {message.message}\n'
+        # for message in user.sent:
+        #   entry += f'{message.sender}: {message.message}\n'
+        # self.set_text_entry(entry)
     
+    def process_messages(self, user: Sender):
+      self.set_text_entry(" ")
+      entry = ""
+      idx1 = 0
+      idx2 = 0
+      while idx1 < len(user.messages) and idx2 < len(user.sent):
+        if float(user.messages[idx1].timestamp) < float(user.sent[idx2].timestamp):
+          entry += f'{user.name}: {user.messages[idx1].message}\n'
+          idx1 += 1
+        else: 
+          entry += f'{user.sent[idx2].sender}: {user.sent[idx2].message}\n'
+          idx2 += 1
+      
+      if idx1 == len(user.messages):
+        for x in range(idx2,len(user.sent)):
+          entry += f'{user.sent[x].sender}: {user.sent[x].message}\n'
+      else:
+        for x in range(idx1,len(user.messages)):
+          entry += f'{user.name}: {user.messages[x].message}\n'
+      self.set_text_entry(entry)
 
     def get_text_entry(self) -> str:
         """
@@ -222,11 +249,23 @@ class MainApp(tk.Frame):
         # into the root frame
         self._draw()
 
+    def error_win(self, error):
+        '''
+        Window popup intended to inform users about errors
+        '''
+        win = tk.Toplevel(main)
+        win.title("Error")
+        win.geometry('600x100')
+        Label(win, text="ERROR").pack()
+
+        self.error_text = tk.Label(win, text=error)
+        self.error_text.pack(fill=tk.BOTH, side=tk.TOP)
+    
     def new_profile(self):
         """
         Creates a new DSU file when the 'New' menu item is clicked.
         """
-        filename = tk.filedialog.asksaveasfile(filetypes=[('Distributed Social Profile', '*.dsu')])
+        filename = tk.filedialog.asksaveasfile(filetypes=[('Distributed Social Profile', '*.dsu')],defaultextension=".dsu")
         self.profile_filename = filename.name
 
         # TODO Write code to perform whatever operations are necessary to prepare the UI for
@@ -248,25 +287,22 @@ class MainApp(tk.Frame):
         filename = tk.filedialog.askopenfile(filetypes=[('Distributed Social Profile', '*.dsu')])
         self.profile_filename = filename.name
 
-        # TODO: Write code to perform whatever operations are necessary to prepare the UI for
-        # an existing DSU file.
-        # HINT: You will probably need to do things like load a profile, import encryption keys 
-        # and update the UI with posts.
-        print(filename.name)
         self.body.reset_ui()
         self._current_profile = Profile()
         self._current_profile.load_profile(filename.name)
         self.messenger = DirectMessenger("168.235.86.101", self._current_profile.username,self._current_profile.password)
         print(self._current_profile.senders)
-        # for message in reciever.retrieve_all():
-        #   print(message)
-        #   print()
-        #   if message.sender not in self._current_profile.senders.keys():
-        #     self._current_profile.senders[message.sender] = []
-        #   self._current_profile.senders[message.sender].append(message)
-
-        for user in self._current_profile.senders.keys():
-            self.body.insert_user(self._current_profile.senders[user])
+        for message in self.messenger.retrieve_new():
+            if message.sender not in self._current_profile.senders.keys():
+              thing1 = []
+              thing2 = [DirectMessage("Server","Start of history",time.time(),self._current_profile.username)]
+              sndr = Sender(message.sender,thing1,thing2)
+              self._current_profile.senders[message.sender] = sndr
+            self._current_profile.senders[message.sender].add_message(message)
+        
+        for sender in self._current_profile.senders.values():
+          self.body.insert_user(sender)
+        self._current_profile.save_profile(filename.name)
 
     
     def close(self):
@@ -280,42 +316,36 @@ class MainApp(tk.Frame):
         Sends a message to the server
         """
         if self.footer.get_entry() != "":
+          # user  = self.body._users[self.body.current_index]
           try:
             user  = self.body._users[self.body.current_index]
           except:
-            print("exception")
+            self.error_win("some error occured")
           else:
             user  = self.body._users[self.body.current_index]
             self.messenger.send(self.footer.get_entry(), user.name)
+            self._current_profile.senders[user.name].add_sent(DirectMessage(user.name,self.footer.get_entry(),time.time(),self._current_profile.username))
+            for mess in self._current_profile.senders[user.name].sent:
+              print("MESSAGE",mess)
             self.body.set_text_entry(f'{self.body.get_text_entry()}\n{self._current_profile.username}: {self.footer.get_entry()}')
             self.footer.set_entry("")
+            self._current_profile.save_profile(self.profile_filename)
 
-          
-          # self.body.set_text_entry(self.body.get_text_entry() + "\n" + self.footer.get_entry())
-          # self.footer.set_entry("")
-          # self._current_profile.save_profile(self.profile_filename)
         
-
-
-
-    def online_changed(self, value:bool):
-        """
-        A callback function for responding to changes to the online chk_button.
-        """
-        if value:
-            self.footer.set_status("Online")
-        else:
-            self.footer.set_status("Offline")
-    
     def add_user(self):
       '''
       Adds a user to the profile, by prompting the user for a username
       '''
       usern = simpledialog.askstring("Add user", "Please enter username")
+      if usern == self._current_profile.username:
+        self.error_win("you can't message yourself silly!")
+        return
       if usern not in self._current_profile.senders.keys():
-        self._current_profile.senders[usern] = (Sender(usern, []))
-        self.body.insert_user(Sender(usern,[]))
-        self._current_profile.save_profile(self.profile_filename)
+        thing1 = []
+        thing2 = [DirectMessage("Server","Start of history",time.time(),self._current_profile.username)]
+        self._current_profile.senders[usern] = Sender(usern,thing1,thing2)
+        self.body.insert_user(Sender(usern,thing1,thing2))
+      self._current_profile.save_profile(self.profile_filename)
     
     def _draw(self):
         """
@@ -355,10 +385,16 @@ class MainApp(tk.Frame):
         if len(new_msgs) != None:
           for message in new_msgs:
             if message.sender not in self._current_profile.senders.keys():
-              sndr = Sender(message.sender,[])
-              self._current_profile.senders[message.sender] = [sndr]
+              thing1 = []
+              thing2 = [DirectMessage("Server","Start of history",time.time(),self._current_profile.username)]
+              sndr = Sender(message.sender,thing1,thing2)
+              self._current_profile.senders[message.sender] = sndr
               self.body.insert_user(sndr)
             self._current_profile.senders[message.sender].add_message(message)
+
+          current_index = int(self.body.users_tree.selection()[0])
+          user  = self.body._users[current_index]
+          print(user)
 
       main.after(1000,self.check)
 
