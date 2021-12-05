@@ -63,7 +63,8 @@ class Body(tk.Frame):
       self.set_text_entry(" ")
       entry = ""
       idx1 = 0
-      idx2 = 0
+      idx2 = 1
+      
       while idx1 < len(user.messages) and idx2 < len(user.sent):
         if float(user.messages[idx1].timestamp) < float(user.sent[idx2].timestamp):
           entry += f'{user.name}: {user.messages[idx1].message}\n'
