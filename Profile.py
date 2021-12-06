@@ -86,6 +86,10 @@ class Post(dict):
     timestamp = property(get_time, set_time)
 
 class Sender(dict):
+  '''
+  Sender class has the role of saving those who the current profile sends messages to
+  Keep track of both messages recieved and messages sent
+  '''
 
   def __init__(self, name: str, messages: list[DirectMessage], sent: list[DirectMessage]):
     self.messages = messages
@@ -94,10 +98,16 @@ class Sender(dict):
     dict.__init__(self, name = self.name, messages = self.messages, sent = self.sent)
   
   def add_message(self, message: DirectMessage):
+    '''
+    adds a message to the list of  recieved messages
+    '''
     self.messages.append(message)
     dict.__setitem__(self, 'messages', self.messages)
   
   def add_sent(self, message: DirectMessage):
+    '''
+    adds a message to the list of sent messages
+    '''
     self.sent.append(message)
     dict.__setitem__(self,'sent',self.sent)
 
@@ -127,17 +137,13 @@ class Profile:
         self.searchterm = "book" # OPTIONAL, defualts to "book"
         self.senders = {}     # OPTIONAL
     
-    """
-
-    add_post accepts a Post object as parameter and appends it to the posts list. Posts are stored in a 
-    list object in the order they are added. So if multiple Posts objects are created, but added to the 
-    Profile in a different order, it is possible for the list to not be sorted by the Post.timestamp property. 
-    So take caution as to how you implement your add_post code.
-
-    """
 
     def add_post(self, post: Post) -> None:
-        self._posts.append(post)
+      """
+      add_post accepts a Post object as parameter and appends it to the posts list. Posts are stored in a 
+      list object in the order they are added. 
+      """
+      self._posts.append(post)
 
 
     def del_post(self, index: int) -> bool:
@@ -157,11 +163,13 @@ class Profile:
       return self._posts
     
     def get_senders(self) -> list[Sender]:
+      '''
+      returns the list containing all senders associated with the profile
+      '''
       return self.senders
 
     def save_profile(self, path: str) -> None:
         """
-
         save_profile accepts an existing dsu file to save the current instance of Profile to the file system.
 
         Example usage:
@@ -170,7 +178,6 @@ class Profile:
         profile.save_profile('/path/to/file.dsu')
 
         Raises DsuFileError
-
         """
         p = Path(path)
 

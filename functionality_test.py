@@ -16,7 +16,7 @@ for message in reciever.retrieve_new():
     testprofile.senders[message.sender] = []
   testprofile.senders[message.sender].append(message)
 
-benny = Sender("hello",[DirectMessage("benp","hello", time.time(), "hello")])
+benny = Sender("hello",[DirectMessage("benp","hello", time.time(), "hello")],[])
 testprofile.save_profile("C:/Users/BPPC/Downloads/FINALTEST/tester.dsu")
 print("recipitne:", testprofile.get_senders())
 

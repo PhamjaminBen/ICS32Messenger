@@ -10,7 +10,7 @@ response = namedtuple('response', ['type','message','token'])
 
 def extract_json(json_msg:str) -> response:
   '''
-  Call the json.loads function on a json string and convert it to a DataTuple object
+  Call the json.loads function on a json string and converts it to a DataTuple object
   '''
   try:
     json_obj = json.loads(json_msg)
@@ -61,6 +61,6 @@ def encode_json(type: str, entry1 = "", entry2 = "", entry3 = "", token = None) 
     print("ERROR: Incorrect Entry Types")
     return None
 
-if __name__ == "__main__":
-  print(encode_json("unread_message", token = "token"))
-  print(extract_json("{\"response\": {\"type\": \"ok\", \"messages\": [{\"message\":\"Hello User 1!\", \"from\":\"markb\", \"timestamp\":\"1603167689.3928561\"},{\"message\":\"Bzzzzz\", \"from\":\"thebeemoviescript\", \"timestamp\":\"1603167689.3928561\"}]}}"))
+# if __name__ == "__main__":
+#   print(encode_json("unread_message", token = "token"))
+#   print(extract_json("{\"response\": {\"type\": \"ok\", \"messages\": [{\"message\":\"Hello User 1!\", \"from\":\"markb\", \"timestamp\":\"1603167689.3928561\"},{\"message\":\"Bzzzzz\", \"from\":\"thebeemoviescript\", \"timestamp\":\"1603167689.3928561\"}]}}"))

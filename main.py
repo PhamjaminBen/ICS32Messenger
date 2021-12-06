@@ -17,7 +17,7 @@
 from os import error
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog, Label
-from tkinter.constants import N
+from tkinter.constants import N, W
 from Profile import Post, Profile, Sender
 import time
 from ds_client import send
@@ -34,8 +34,8 @@ class Body(tk.Frame):
         self.root = root
         self._select_callback = select_callback
 
-        # a list of the user objects available in the active DSU file
-        self._users = []
+        # a list of the sender objects available in the active DSU file
+        self._senders = []
         
         # After all initialization is complete, call the _draw method to pack the widgets
         # into the Body instance 
@@ -43,42 +43,39 @@ class Body(tk.Frame):
     
     def node_select(self, event):
         """
-        Update the entry_editor with the full post entry when the corresponding node in the users_tree
+        Update the entry_editor with the full post entry when the corresponding node in the senders_tree
         is selected.
         """
-        print(self.users_tree.selection())
-        self.current_index = int(self.users_tree.selection()[0])
-        user  = self._users[self.current_index]
-        self.process_messages(user)
-        # print(user.messages)
-        # print(user.sent)
+        print(self.senders_tree.selection())
+        self.current_index = int(self.senders_tree.selection()[0])
+        sender  = self._senders[self.current_index]
+        self.process_messages(sender)
 
-        # for message in user.messages:
-        #   entry += f'{user.name}: {message.message}\n'
-        # for message in user.sent:
-        #   entry += f'{message.sender}: {message.message}\n'
-        # self.set_text_entry(entry)
-    
-    def process_messages(self, user: Sender):
+    def process_messages(self, sender: Sender):
+      '''
+      Refreshes the text entry of the selected Sender
+      Recreates the message history between client and respective sender using timestamps
+      '''
       self.set_text_entry(" ")
       entry = ""
       idx1 = 0
-      idx2 = 1
+      idx2 = 1 #ignores the initialization message for the sent list
       
-      while idx1 < len(user.messages) and idx2 < len(user.sent):
-        if float(user.messages[idx1].timestamp) < float(user.sent[idx2].timestamp):
-          entry += f'{user.name}: {user.messages[idx1].message}\n'
+      while idx1 < len(sender.messages) and idx2 < len(sender.sent):
+        if float(sender.messages[idx1].timestamp) < float(sender.sent[idx2].timestamp):
+          entry += f'{sender.name}: {sender.messages[idx1].message}\n'
           idx1 += 1
         else: 
-          entry += f'{user.sent[idx2].sender}: {user.sent[idx2].message}\n'
+          entry += f'{sender.sent[idx2].sender}: {sender.sent[idx2].message}\n'
           idx2 += 1
       
-      if idx1 == len(user.messages):
-        for x in range(idx2,len(user.sent)):
-          entry += f'{user.sent[x].sender}: {user.sent[x].message}\n'
+      #displays the remaining messages when one or the other has all of theirs displayed
+      if idx1 == len(sender.messages):
+        for x in range(idx2,len(sender.sent)):
+          entry += f'{sender.sent[x].sender}: {sender.sent[x].message}\n'
       else:
-        for x in range(idx1,len(user.messages)):
-          entry += f'{user.name}: {user.messages[x].message}\n'
+        for x in range(idx1,len(sender.messages)):
+          entry += f'{sender.name}: {sender.messages[x].message}\n'
       self.set_text_entry(entry)
 
     def get_text_entry(self) -> str:
@@ -95,23 +92,23 @@ class Body(tk.Frame):
       """
       self.entry_editor.replace("1.0","end", text)
     
-    def set_users(self, users:list):
+    def set_senders(self, senders:list):
         """
-        Populates the self._users attribute with posts from the active DSU file.
+        Populates the self._senders attribute with Senders from the active DSU file.
         """
-        for user in users:
-            self._users = []
-            for item in self.users_tree.get_children():
-                self.users_tree.delete(item)
-            self.insert_user(user)
+        for sender in senders:
+            self._senders = []
+            for item in self.senders_tree.get_children():
+                self.senders_tree.delete(item)
+            self.insert_sender(sender)
             
-    def insert_user(self, user: Sender):
+    def insert_sender(self, sender: Sender):
         """
-        Inserts a single post to the post_tree widget.
+        Inserts a single sender to the post_tree widget.
         """
-        self._users.append(user)
-        id = len(self._users) - 1 #adjust id for 0-base of treeview widget
-        self._insert_user_tree(id, user.name)
+        self._senders.append(sender)
+        id = len(self._senders) - 1 #adjust id for 0-base of treeview widget
+        self._insert_sender_tree(id, sender.name)
 
     def reset_ui(self):
         """
@@ -120,19 +117,19 @@ class Body(tk.Frame):
         """
         self.set_text_entry("")
         self.entry_editor.configure(state=tk.NORMAL)
-        self._users = []
-        for item in self.users_tree.get_children():
-            self.users_tree.delete(item)
+        self._senders = []
+        for item in self.senders_tree.get_children():
+            self.senders_tree.delete(item)
 
-    def _insert_user_tree(self, id, user):
+    def _insert_sender_tree(self, id, sender):
         """
-        Inserts a user entry into the users_tree widget.
+        Inserts a sender entry into the senders_tree widget.
         """
-        #if username is too long, then cuti f off
-        if len(user) > 25:
-            user = user[:24] + "..."
+        #if sendername is too long, then cuti f off
+        if len(sender) > 25:
+            sender = sender[:24] + "..."
         
-        self.users_tree.insert('', id, id, text=user)
+        self.senders_tree.insert('', id, id, text=sender)
     
     def _draw(self):
         """
@@ -140,9 +137,9 @@ class Body(tk.Frame):
         """
         posts_frame = tk.Frame(master=self, width=250)
         posts_frame.pack(fill=tk.BOTH, side=tk.LEFT)
-        self.users_tree = ttk.Treeview(posts_frame)
-        self.users_tree.bind("<<TreeviewSelect>>", self.node_select)
-        self.users_tree.pack(fill=tk.BOTH, side=tk.TOP, expand=True, padx=5, pady=0)
+        self.senders_tree = ttk.Treeview(posts_frame)
+        self.senders_tree.bind("<<TreeviewSelect>>", self.node_select)
+        self.senders_tree.pack(fill=tk.BOTH, side=tk.TOP, expand=True, padx=5, pady=0)
 
         entry_frame = tk.Frame(master=self, bg="")
         entry_frame.pack(fill=tk.BOTH, side=tk.TOP, expand=True)
@@ -167,11 +164,11 @@ class Footer(tk.Frame):
     A subclass of tk.Frame that is responsible for drawing all of the widgets
     in the footer portion of the root frame.
     """
-    def __init__(self, root, save_callback=None, user_callback = None):
+    def __init__(self, root, save_callback=None, sender_callback = None):
         tk.Frame.__init__(self, root)
         self.root = root
         self._save_callback = save_callback
-        self._user_callback = user_callback
+        self._sender_callback = sender_callback
         # IntVar is a variable class that provides access to special variables
         # for Tkinter widgets. is_online is used to hold the state of the chk_button widget.
         # The value assigned to is_online when the chk_button widget is changed by the user
@@ -182,13 +179,13 @@ class Footer(tk.Frame):
         # into the Footer instance 
         self._draw()
     
-    def user_click(self):
+    def sender_click(self):
         """
-        Calls the callback function specified in the user class attribute, if
-        available, when the add user button has been clicked.
+        Calls the callback function specified in the sender class attribute, if
+        available, when the add sender button has been clicked.
         """
-        if self._user_callback is not None:
-            self._user_callback()
+        if self._sender_callback is not None:
+            self._sender_callback()
 
     def send_click(self):
         """
@@ -218,9 +215,9 @@ class Footer(tk.Frame):
         save_button.configure(command=self.send_click)
         save_button.pack(fill=tk.BOTH, side=tk.RIGHT, padx =0, pady=50)
 
-        user_button = tk.Button(master=self, text = "Add User", width = 12, height= 20)
-        user_button.configure(command= self.user_click)
-        user_button.pack(fill=tk.BOTH, side=tk.TOP, padx =5, pady=50)
+        sender_button = tk.Button(master=self, text = "Add sender", width = 12, height= 20)
+        sender_button.configure(command= self.sender_click)
+        sender_button.pack(fill=tk.BOTH, side=tk.TOP, padx =5, pady=50)
 
         # self.chk_button = tk.Checkbutton(master=self, text="Online", variable=self.is_online)
         # self.chk_button.configure(command=self.online_click) 
@@ -286,13 +283,16 @@ class MainApp(tk.Frame):
         data into the UI.
         """
         filename = tk.filedialog.askopenfile(filetypes=[('Distributed Social Profile', '*.dsu')])
-        self.profile_filename = filename.name
+        #doesn't throw a console error if the user cancels out of the file exception
+        try:
+          self.profile_filename = filename.name
+        except AttributeError:
+          return 
 
         self.body.reset_ui()
         self._current_profile = Profile()
         self._current_profile.load_profile(filename.name)
         self.messenger = DirectMessenger("168.235.86.101", self._current_profile.username,self._current_profile.password)
-        print(self._current_profile.senders)
         for message in self.messenger.retrieve_new():
             if message.sender not in self._current_profile.senders.keys():
               thing1 = []
@@ -302,7 +302,7 @@ class MainApp(tk.Frame):
             self._current_profile.senders[message.sender].add_message(message)
         
         for sender in self._current_profile.senders.values():
-          self.body.insert_user(sender)
+          self.body.insert_sender(sender)
         self._current_profile.save_profile(filename.name)
 
     
@@ -310,6 +310,7 @@ class MainApp(tk.Frame):
         """                
         Closes the program when the 'Close' menu item is clicked.
         """
+        self._current_profile.save_profile(self.profile_filename)
         self.root.destroy()
 
     def send_message(self):
@@ -317,35 +318,41 @@ class MainApp(tk.Frame):
         Sends a message to the server
         """
         if self.footer.get_entry() != "":
-          # user  = self.body._users[self.body.current_index]
+          # sender  = self.body._senders[self.body.current_index]
           try:
-            user  = self.body._users[self.body.current_index]
-          except:
-            self.error_win("some error occured")
+            sender  = self.body._senders[self.body.current_index]
+          except AttributeError:
+            self.error_win("Select a sender first, and make sure you have a file open")
           else:
-            user  = self.body._users[self.body.current_index]
-            self.messenger.send(self.footer.get_entry(), user.name)
-            self._current_profile.senders[user.name].add_sent(DirectMessage(user.name,self.footer.get_entry(),time.time(),self._current_profile.username))
-            for mess in self._current_profile.senders[user.name].sent:
+            sender  = self.body._senders[self.body.current_index]
+            self.messenger.send(self.footer.get_entry(), sender.name)
+            self._current_profile.senders[sender.name].add_sent(DirectMessage(sender.name,self.footer.get_entry(),time.time(),self._current_profile.username))
+            for mess in self._current_profile.senders[sender.name].sent:
               print("MESSAGE",mess)
             self.body.set_text_entry(f'{self.body.get_text_entry()}\n{self._current_profile.username}: {self.footer.get_entry()}')
             self.footer.set_entry("")
             self._current_profile.save_profile(self.profile_filename)
 
         
-    def add_user(self):
+    def add_sender(self):
       '''
-      Adds a user to the profile, by prompting the user for a username
+      Adds a sender to the profile, by prompting the user for a username
       '''
-      usern = simpledialog.askstring("Add user", "Please enter username")
+      usern = simpledialog.askstring("Add sender", "Please enter username")
+      try:
+        self._current_profile.save_profile(self.profile_filename)
+      except AttributeError:
+        self.error_win("please open a valid dsu file to use this function.")
+        return
+
       if usern == self._current_profile.username:
-        self.error_win("you can't message yourself silly!")
+        self.error_win("you can't message yourself!")
         return
       if usern not in self._current_profile.senders.keys():
         thing1 = []
-        thing2 = [DirectMessage("Server","Start of history",time.time(),self._current_profile.username)]
+        thing2 = [DirectMessage("Server","PLACEHOLDER MESSAGE TO PREVENT OBJECT REFERENCE PROBLEMS",time.time(),self._current_profile.username)] #PLACEHOLDER MESSAGE TO PREVENT OBJECT REFERENCE PROBLEMS
         self._current_profile.senders[usern] = Sender(usern,thing1,thing2)
-        self.body.insert_user(Sender(usern,thing1,thing2))
+        self.body.insert_sender(Sender(usern,thing1,thing2))
       self._current_profile.save_profile(self.profile_filename)
     
     def _draw(self):
@@ -372,12 +379,13 @@ class MainApp(tk.Frame):
         # TODO: Add a callback for detecting changes to the online checkbox widget in the Footer class. Follow
         # the conventions established by the existing save_callback parameter.
         # HINT: There may already be a class method that serves as a good callback function!
-        self.footer = Footer(self.root, save_callback=self.send_message, user_callback= self.add_user)
+        self.footer = Footer(self.root, save_callback=self.send_message, sender_callback= self.add_sender)
         self.footer.pack(fill=tk.BOTH, side=tk.BOTTOM)
     
     def check(self):
       '''
-      Function to continually check for messages
+      Function to continually check for new messages, and update all of the recipients' messages if there are new ones
+      In addition, saves the messages history every time it is called
       '''
       try:
         new_msgs = self.messenger.retrieve_new()
@@ -387,15 +395,22 @@ class MainApp(tk.Frame):
           for message in new_msgs:
             if message.sender not in self._current_profile.senders.keys():
               thing1 = []
-              thing2 = [DirectMessage("Server","Start of history",time.time(),self._current_profile.username)]
+              thing2 = [DirectMessage("Server","Start of history",time.time(),self._current_profile.username)] #placeholder to avoid two lsit objects with the same reference
               sndr = Sender(message.sender,thing1,thing2)
               self._current_profile.senders[message.sender] = sndr
-              self.body.insert_user(sndr)
+              self.body.insert_sender(sndr)
             self._current_profile.senders[message.sender].add_message(message)
+            #Refreshes the current selected recipient so that if new messages are sent it can show client in real time
+            try:
+              current_index = int(self.body.senders_tree.selection()[0])
+              sender  = self.body._senders[current_index]
+              if sender.name == message.sender:
+                self.body.process_messages(sender)
+            except IndexError:
+              pass #just in case user doesn't have a recipient selected
+        
 
-          current_index = int(self.body.users_tree.selection()[0])
-          user  = self.body._users[current_index]
-          print(user)
+
 
       main.after(1000,self.check)
 

@@ -142,25 +142,25 @@ class DirectMessenger:
     self.client.close()
     return all_messages
 
-if __name__ == "__main__":
-    messenger = DirectMessenger("168.235.86.101", "username", "password")
-    messenger.send("hello","benP")
-    messenger.send("shut up","benP")
+# if __name__ == "__main__":
+#     messenger = DirectMessenger("168.235.86.101", "username", "password")
+#     messenger.send("hello","benP")
+#     messenger.send("shut up","benP")
 
 
-    messenger = DirectMessenger("168.235.86.101", "benP", "waytomad")
-    for message in messenger.retrieve_new():
-      print(message)
+#     messenger = DirectMessenger("168.235.86.101", "benP", "waytomad")
+#     for message in messenger.retrieve_new():
+#       print(message)
     
-    print("---------")
-    messenger = DirectMessenger("168.235.86.101", "username", "password")
-    print(messenger.send("33","benP"))
-    messenger = DirectMessenger("168.235.86.101", "benP", "waytomad")
+#     print("---------")
+#     messenger = DirectMessenger("168.235.86.101", "username", "password")
+#     print(messenger.send("33","benP"))
+#     messenger = DirectMessenger("168.235.86.101", "benP", "waytomad")
 
-    print(messenger.retrieve_new())
-    # for message in messenger.retrieve_new():
-    #   print(message)
+#     print(messenger.retrieve_new())
+#     # for message in messenger.retrieve_new():
+#     #   print(message)
 
-    print("all")
-    for message in messenger.retrieve_all():
-      print(message)
+#     print("all")
+#     for message in messenger.retrieve_all():
+#       print(message)
