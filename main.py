@@ -12,17 +12,11 @@
 # BENJADP1@UCI.EDU
 # 53569186
 
-
-from json.decoder import JSONDecodeError
-from os import error
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog, Label
-from tkinter.constants import N, NO, W
-from typing import Text
-from Profile import Post, Profile, Sender
+from Profile import Profile, Sender
 import time
 from ds_messenger import DirectMessenger, DirectMessage, DsuClientError
-from pathlib import Path
 import datetime
 
 
@@ -65,6 +59,7 @@ class Body(tk.Frame):
       idx1 = 0
       idx2 = 1 #ignores the initialization message for the sent list
       
+      #displayes the messages in order of timestemp until one reaches the max
       while idx1 < len(sender.messages) and idx2 < len(sender.sent):
         if float(sender.messages[idx1].timestamp) < float(sender.sent[idx2].timestamp):
           entry += f'{sender.name}: {sender.messages[idx1].message}\n'
@@ -81,6 +76,7 @@ class Body(tk.Frame):
         for x in range(idx1,len(sender.messages)):
           entry += f'{sender.name}: {sender.messages[x].message}\n'
       self.set_text_entry(entry)
+
 
     def get_text_entry(self) -> str:
         """
@@ -339,6 +335,7 @@ class MainApp(tk.Frame):
       self.text = tk.Label(win,text = label)
       self.text.pack(fill=tk.BOTH, side=tk.TOP)
     
+
     def new_profile(self):
         """
         Creates a new DSU file when the 'New' menu item is clicked.
@@ -368,6 +365,7 @@ class MainApp(tk.Frame):
         else:
           self._current_profile.save_profile(self.profile_filename)
     
+
     def open_profile(self):
         """
         Opens an existing DSU file when the 'Open' menu item is clicked and loads the profile
@@ -380,6 +378,7 @@ class MainApp(tk.Frame):
         except AttributeError:
           return
 
+        #setting up and loading all of the previous messages history
         self.body.reset_ui()
         self._current_profile = Profile()
         self._current_profile.load_profile(filename.name)
@@ -389,6 +388,7 @@ class MainApp(tk.Frame):
           self.error_win(str(ex))
           return
 
+        #adding new messages from senders
         for message in new_msgs:
             if message.sender not in self._current_profile.senders.keys():
               thing1 = []
@@ -408,6 +408,7 @@ class MainApp(tk.Frame):
         """
         self.root.destroy()
 
+
     def send_message(self):
         """
         Attempts to send the message in the message box to the selected user
@@ -420,6 +421,7 @@ class MainApp(tk.Frame):
             return
           
           try:
+            #sends the message to the server, and then updates the display to include the new message in the message history
             sender  = self.body._senders[self.body.current_index]
             self.messenger.send(self.footer.get_entry(), sender.name)
             self._current_profile.senders[sender.name].add_sent(DirectMessage(sender.name,self.footer.get_entry(),time.time(),self._current_profile.username))
@@ -434,16 +436,19 @@ class MainApp(tk.Frame):
       '''
       Adds a sender to the profile, by prompting the user for a username
       '''
+
       usern = simpledialog.askstring("Add sender", "Please enter username")
       try:
         self._current_profile.save_profile(self.profile_filename)
       except AttributeError:
         self.error_win("please open a valid dsu file to use this function.")
         return
+
       try:
         if usern == self._current_profile.username:
           self.error_win("you can't message yourself!")
           return
+        #inserts new sender and updates senders list
         if usern not in self._current_profile.senders.keys():
           thing1 = []
           thing2 = [DirectMessage("Server","PLACEHOLDER MESSAGE TO PREVENT OBJECT REFERENCE PROBLEMS",time.time(),self._current_profile.username)] #PLACEHOLDER MESSAGE TO PREVENT OBJECT REFERENCE PROBLEMS

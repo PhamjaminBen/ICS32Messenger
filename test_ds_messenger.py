@@ -13,6 +13,9 @@ class CommandTestBase(unittest.TestCase):
     self.assertEqual([dm.recipient, dm.message, dm.timestamp], ["Ben", "hello", t])
 
   def test_direct_messenger(self):
+    '''
+    Tests the functions of the direct messenger class by sending and retrieving messages
+    '''
     #sending to an invalid server
     thing = False
     sender = DirectMessenger("invalidserver", "username", "password")

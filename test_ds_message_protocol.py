@@ -8,6 +8,9 @@ import unittest
 class CommandTestBase(unittest.TestCase):
 
   def test_encode_json(self):
+    '''
+    Tests encoding into json for all of the different possible commands to send to the server
+    '''
     t1 = encode_json("join","username","password")
     self.assertEqual(t1,{"join": {"username": "username","password": "password","token":""}})
 
@@ -27,6 +30,9 @@ class CommandTestBase(unittest.TestCase):
     self.assertEqual(t1,{"token":"token", "directmessage": "all"})
   
   def test_extract_json(self):
+    '''
+    Tests extracting certain json messages from the server and make sure the correct data is extracted
+    '''
     d1 = extract_json("{\"response\": {\"type\": \"ok\", \"message\": \"Direct message sent\"}}")
     self.assertEqual(d1, response("ok", "Direct message sent", ""))
 

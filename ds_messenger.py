@@ -3,8 +3,7 @@
 # 53569186
 
 from os import terminal_size, write
-from typing import TextIO
-import ds_client as dsc
+from typing import Any, TextIO
 import time, socket, json
 from json.decoder import JSONDecodeError
 import ds_protocol as dsp
@@ -24,6 +23,7 @@ class DirectMessage(dict):
     self.message = message
     self.timestamp = timestamp
     self.sender = sender
+    #ensures it can be stored using json
     dict.__init__(self, recipient = self.recipient, message = self.message, timestamp = self.timestamp, sender = self.sender)
 
   def __repr__(self) -> str:
@@ -85,7 +85,7 @@ class DirectMessenger:
 
 
 
-  def _read_command(self,f_recv, login = True, get_all = False):
+  def _read_command(self,f_recv, login = True, get_all = False) -> Any:
     '''
     reads from the server and extracts the message, returns user token if logged in
     if login is true, will print the message
@@ -107,7 +107,6 @@ class DirectMessenger:
         return True
     except JSONDecodeError as ex:
         raise DsuClientError("Error while Sending JSOn to server", ex)
-    return False 
 		
 
 

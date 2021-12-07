@@ -1,5 +1,7 @@
 Welcome to the final project for ICS32 By Benjamin Pham
 
+ALL PDOCS WILL BE IN THE __PDOCS__ FOLDER
+
 Instructions:
   The main program is run by executing the __main.py__ file, a popup window will appear.
   The cascading menu on top gives you options to either create a new file, open a previous one, or look at the statistics between users (currently selected user)
@@ -16,4 +18,14 @@ Custom Class added:
 
 Custom Exception added: 
   I added the DsuClientError in __ds_messenger.py__ that is raised when there are problems with server connection or data sending to a server
+
+Files:
+__main.py__ The main program that runs the user interface and all of the functions
+__ds_messenger.py__ Program that contains the classes dealing with Direct Messages and Retrieving messages from the server
+__ds_protocol.py__ Program that helps with converting messages into JSON and extracting JSON messages from the server
+__Profile.py__ Program that stores direct message data locally for each user
+__test_ds_message_protocol.py__ Program that tests the functionality of __ds_protocol.py__
+__test_ds_messenger.py__ Program that tests the functionality of __ds_messenger.py__
+
+
 

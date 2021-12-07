@@ -2,7 +2,7 @@
 # BENJADP1@UCI.EDU
 # 53569186
 
-import json,time
+import json
 from collections import namedtuple
 
 # Namedtuple to hold the values retrieved from json messages.

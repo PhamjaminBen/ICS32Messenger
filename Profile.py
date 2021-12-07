@@ -19,9 +19,8 @@
 # BENJADP1@UCI.EDU
 # 53569186
 
-import json, time, os
+import json, os
 from pathlib import Path
-from typing import List
 from ds_messenger import DirectMessage
 
 class DsuFileError(Exception):
@@ -35,46 +34,6 @@ class DsuProfileError(Exception):
     DsuProfileError is a custom exception handler that is raised when attempting to deserialize a dsu file to a Profile object.
     """
     pass
-
-
-class Post(dict):
-    """ 
-    The Post class is responsible for working with individual user posts. 
-    """
-    def __init__(self, entry:str = None, timestamp:float = 0):
-        self._timestamp = timestamp
-        self.set_entry(entry)
-
-        # Subclass dict to expose Post properties for serialization
-        dict.__init__(self, entry=self._entry, timestamp=self._timestamp)
-    
-    def set_entry(self, entry):
-        self._entry = entry 
-        dict.__setitem__(self, 'entry', entry)
-
-        # If timestamp has not been set, generate a new from time module
-        if self._timestamp == 0:
-            self._timestamp = time.time()
-
-    def get_entry(self):
-        return self._entry
-    
-    def set_time(self, time:float):
-        self._timestamp = time
-        dict.__setitem__(self, 'timestamp', time)
-    
-    def get_time(self):
-        return self._timestamp
-
-    """
-
-    The property method is used to support get and set capability for entry and time values.
-    When the value for entry is changed, or set, the timestamp field is updated to the
-    current time.
-
-    """ 
-    entry = property(get_entry, set_entry)
-    timestamp = property(get_time, set_time)
 
 class Sender(dict):
   '''
