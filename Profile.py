@@ -39,18 +39,13 @@ class DsuProfileError(Exception):
 
 class Post(dict):
     """ 
-
-    The Post class is responsible for working with individual user posts. It currently supports two features: 
-    A timestamp property that is set upon instantiation and when the entry object is set and an 
-    entry property that stores the post message.
-
+    The Post class is responsible for working with individual user posts. 
     """
     def __init__(self, entry:str = None, timestamp:float = 0):
         self._timestamp = timestamp
         self.set_entry(entry)
 
         # Subclass dict to expose Post properties for serialization
-        # Don't worry about this!
         dict.__init__(self, entry=self._entry, timestamp=self._timestamp)
     
     def set_entry(self, entry):
@@ -95,7 +90,7 @@ class Sender(dict):
   
   def add_message(self, message: DirectMessage):
     '''
-    adds a message to the list of  recieved messages
+    adds a message to the list of recieved messages
     '''
     self.messages.append(message)
     dict.__setitem__(self, 'messages', self.messages)
@@ -111,52 +106,14 @@ class Sender(dict):
     
 class Profile:
     """
-    The Profile class exposes the properties required to join an ICS 32 DSU server. You will need to 
-    use this class to manage the information provided by each new user created within your program for a2. 
-    Pay close attention to the properties and functions in this class as you will need to make use of 
-    each of them in your program.
-
-    When creating your program you will need to collect user input for the properties exposed by this class. 
-    A Profile class should ensure that a username and password are set, but contains no conventions to do so. 
-    You should make sure that your code verifies that required properties are set.
-
+    The Profile class exposes the properties required to message other users
     """
 
     def __init__(self, dsuserver=None, username=None, password=None):
-        self.dsuserver = dsuserver # REQUIRED
+        self.dsuserver = dsuserver # REQUIRED: Server that messages are sent on
         self.username = username # REQUIRED
         self.password = password # REQUIRED
-        self.bio = ''            # OPTIONAL
-        self._posts = []         # OPTIONAL
-        self.zipcode = "92612"   # OPTIONAL, defualts to Irvine
-        self.countrycode = "us"  # OPTIONAL, defualts to the USA
-        self.searchterm = "book" # OPTIONAL, defualts to "book"
-        self.senders = {}     # OPTIONAL
-    
-
-    def add_post(self, post: Post) -> None:
-      """
-      add_post accepts a Post object as parameter and appends it to the posts list. Posts are stored in a 
-      list object in the order they are added. 
-      """
-      self._posts.append(post)
-
-
-    def del_post(self, index: int) -> bool:
-        '''
-        del_post removes a Post at a given index and returns True if successful and False if an invalid index was supplied. 
-        '''
-        try:
-            del self._posts[index]
-            return True
-        except IndexError:
-            return False
-      
-    def get_posts(self) -> list:
-      """
-      get_posts returns the list object containing all posts that have been added to the Profile object
-      """
-      return self._posts
+        self.senders = {}     #list of other users you have direct messages with
     
     def get_senders(self) -> list[Sender]:
       '''
@@ -209,20 +166,12 @@ class Profile:
                 self.username = obj['username']
                 self.password = obj['password']
                 self.dsuserver = obj['dsuserver']
-                self.bio = obj['bio']
-                self.countrycode = obj['countrycode']
-                self.zipcode = obj['zipcode']
-                self.searchterm = obj['searchterm']
-                for post_obj in obj['_posts']:
-                    post = Post(post_obj['entry'], post_obj['timestamp'])
-                    self._posts.append(post)
                 for sender in obj['senders'].keys():
                     list1 = []
                     for message in obj['senders'][sender]['messages']:
-                      # print(DirectMessage(message['recipient'],message['message'], message['timestamp'], message['sender']))
                       list1.append(DirectMessage(message['recipient'],message['message'], message['timestamp'], message['sender']))
                     
-                    list2 = []
+                    list2 = [] #we initialize two separate lists to avoid object referencing referring to the same object
                     for message in obj['senders'][sender]['sent']:
                         list2.append(DirectMessage(message['recipient'],message['message'], message['timestamp'], message['sender']))
                     self.senders[sender] = Sender(sender,list1,list2)

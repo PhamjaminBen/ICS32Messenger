@@ -9,11 +9,6 @@ import ds_protocol as dsp
 import time
 import json
 
-class DsuClientError(Exception):
-    """
-    DsuClientError is a custom exception handler that is raised when there are problems with server connection or data sending to a server
-    """
-    pass
 
 def send(server:str, port:int, username:str, password:str, message:str, bio:str=None):
   '''
@@ -64,7 +59,7 @@ def send(server:str, port:int, username:str, password:str, message:str, bio:str=
 def read_command(f_recv: TextIO, login = True) -> str:
     '''
     reads from the server and extracts the message, returns user token if logged in
-    if login is true, will print the message
+    if param login is true, will print the message
     '''
     s = dsp.extract_json(f_recv.readline()[:-1])
     if login: print("[SERVER MESSAGE] " + s.type + ": " + s.message)
@@ -73,7 +68,7 @@ def read_command(f_recv: TextIO, login = True) -> str:
 
 def write_command(cmd: str, f_send: TextIO) -> bool:
   '''
-  sends data to server using json
+  Attempts to send JSON data to the server
   '''
   try:
     f_send.write((json.dumps(cmd) + "\r\n"))
@@ -81,4 +76,3 @@ def write_command(cmd: str, f_send: TextIO) -> bool:
     return True
   except JSONDecodeError as ex:
     raise DsuClientError("Error while sending JSON data to the server.",ex)
-    return False 

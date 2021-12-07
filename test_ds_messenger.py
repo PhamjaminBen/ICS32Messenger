@@ -1,6 +1,5 @@
 import unittest
-from ds_client import DsuClientError
-from ds_messenger import DirectMessenger, DirectMessage 
+from ds_messenger import DirectMessenger, DirectMessage, DsuClientError
 import time
 
 class CommandTestBase(unittest.TestCase):
@@ -42,6 +41,7 @@ class CommandTestBase(unittest.TestCase):
     sender.send("33", "benP")
     sender.client.close()
 
+    #ensuring first messages and last messages match
     rcvr = DirectMessenger("168.235.86.101", "benP", "waytomad")
     new_msgs2 = rcvr.retrieve_new()
     self.assertEqual(new_msgs2[0].message, "33")

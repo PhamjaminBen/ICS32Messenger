@@ -21,8 +21,7 @@ from tkinter.constants import N, NO, W
 from typing import Text
 from Profile import Post, Profile, Sender
 import time
-from ds_client import send, DsuClientError
-from ds_messenger import DirectMessenger, DirectMessage
+from ds_messenger import DirectMessenger, DirectMessage, DsuClientError
 from pathlib import Path
 import datetime
 
@@ -232,7 +231,7 @@ class MainApp(tk.Frame):
     def __init__(self, root):
         tk.Frame.__init__(self, root)
         self.root = root
-        # Initialize a new NaClProfile and assign it to a class attribute.
+        # Initialize a new Profile and assign it to a class attribute.
         self._current_profile = Profile()
 
         # After all initialization is complete, call the _draw method to pack the widgets
@@ -263,11 +262,12 @@ class MainApp(tk.Frame):
         self.error_win("No sender currently selected")
         return
       
-      #calculating the first message sent
-      t1 = 999999999.0
-      t2 = 999999999.0
+      #calculating the first message sent, by seeing which timestamp is most ancient
+      t1 = 999999999999999.0
+      t2 = 999999999999999.0
       mintime = None
-      minmsg = None
+      minmsg1 = None
+      minmsg2 = None
       try:
         t1 = float(sender.sent[1].timestamp)
       except IndexError: pass
@@ -275,7 +275,9 @@ class MainApp(tk.Frame):
         t2 = float(sender.messages[0].timestamp)
       except IndexError: pass
 
-      if min(t1,t2) == 999999999.0:
+      print(t1,t2)
+
+      if min(t1,t2) == 999999999999999.0:
         mintime = "None"
         minmsg1 = "None"
         minmsg2 = "None"
@@ -288,16 +290,17 @@ class MainApp(tk.Frame):
           minmsg1 = sender.messages[0].message
           minmsg2 = sender.messages[0].sender
 
-      #calculating the latest message sent
+      #calculating the latest message sent, by seeing which timestamp is most recent
       t1 = 0.0
       t2 = 0.0
       maxtime = None
-      maxmsg = None
+      maxmsg1 = None
+      maxmsg2 = None
       try:
-        t1 = float(sender.sent[-1].timestamp)
+        if len(sender.sent) != 1:
+          t1 = float(sender.sent[-1].timestamp)
       except IndexError: pass
       try:
-        if sender.messages[-1].sender != "Server":
           t2 = float(sender.messages[-1].timestamp)
       except IndexError: pass
 
@@ -315,11 +318,12 @@ class MainApp(tk.Frame):
           maxmsg2 = sender.messages[-1].sender
 
 
-
+      #Displying info on a popup window
       win = tk.Toplevel(main)
       win.title("Stats")
       win.geometry('400x200')
       Label(win, text = "STATS").pack
+
       label = f"""
       STATISTICS WITH: {sender.name}
 
@@ -328,9 +332,10 @@ class MainApp(tk.Frame):
       Messages sent by {sender.name}: {len(sender.messages)}
       First message: {minmsg1}, from {minmsg2}
       First message time: {mintime}
-      Latest message: {maxmsg1}, from {maxmsg1}
+      Latest message: {maxmsg1}, from {maxmsg2}
       Latest message time: {maxtime}
       """
+
       self.text = tk.Label(win,text = label)
       self.text.pack(fill=tk.BOTH, side=tk.TOP)
     
@@ -379,7 +384,12 @@ class MainApp(tk.Frame):
         self._current_profile = Profile()
         self._current_profile.load_profile(filename.name)
         self.messenger = DirectMessenger("168.235.86.101", self._current_profile.username,self._current_profile.password)
-        for message in self.messenger.retrieve_new():
+        try: new_msgs = self.messenger.retrieve_new()
+        except DsuClientError as ex:
+          self.error_win(str(ex))
+          return
+
+        for message in new_msgs:
             if message.sender not in self._current_profile.senders.keys():
               thing1 = []
               thing2 = [DirectMessage("Server","INITIALIZATION MSG",time.time(),self._current_profile.username)] #initialization message to prevent object copying problems
@@ -400,7 +410,7 @@ class MainApp(tk.Frame):
 
     def send_message(self):
         """
-        Sends a message to the server
+        Attempts to send the message in the message box to the selected user
         """
         if self.footer.get_entry() != "":
           try:
@@ -489,11 +499,9 @@ class MainApp(tk.Frame):
               if sender.name == message.sender:
                 self.body.process_messages(sender)
             except IndexError:
-              pass #just in case user doesn't have a recipient selected
-        
-
-
-
+              pass #just in case user doesn't have a recipient selected on the node tree
+      
+      #ensures this process is repeated every second
       main.after(1000,self.check)
 
 if __name__ == "__main__":
@@ -524,5 +532,6 @@ if __name__ == "__main__":
     main.update()
     main.minsize(main.winfo_width(), main.winfo_height())
     # And finally, start up the event loop for the program (more on this in lecture).
+    #and starts up the continual checking loop
     main.after(1000, mapp.check)
     main.mainloop()

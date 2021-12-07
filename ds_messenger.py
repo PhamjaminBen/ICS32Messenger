@@ -9,6 +9,12 @@ import time, socket, json
 from json.decoder import JSONDecodeError
 import ds_protocol as dsp
 
+class DsuClientError(Exception):
+    """
+    DsuClientError is a custom exception handler that is raised when there are problems with server connection or data sending to a server
+    """
+    pass
+
 class DirectMessage(dict):
   '''
   DirectMessage class stores data pertaining to a direct message
@@ -45,7 +51,7 @@ class DirectMessenger:
     '''
     if not self.log_in(): return False
     message = DirectMessage(recipient,message, time.time())
-    
+  
     if not self._write_command(dsp.encode_json("directmessage", message.message,message.recipient, message.timestamp, self.token), self.f_send):
       print(self._read_command(self.f_recv))
       self.client.close()
@@ -70,7 +76,7 @@ class DirectMessenger:
       self.f_send = self.client.makefile('w')
       self.f_recv = self.client.makefile('r')
     except socket.error as ex:
-      raise dsc.DsuClientError("Problem logging into the server",ex)
+      raise DsuClientError("Problem logging into the server",ex)
     
     if not self._write_command(dsp.encode_json("join", self.username,self.password), self.f_send): return False
     self.token = self._read_command(self.f_recv, login = False)
@@ -99,8 +105,8 @@ class DirectMessenger:
         self.f_send.write((json.dumps(cmd) + "\r\n"))
         self.f_send.flush()
         return True
-    except JSONDecodeError:
-        print("ERROR: Could not write to output file")
+    except JSONDecodeError as ex:
+        raise DsuClientError("Error while Sending JSOn to server", ex)
     return False 
 		
 
@@ -140,26 +146,3 @@ class DirectMessenger:
     
     self.client.close()
     return all_messages
-
-# if __name__ == "__main__":
-#     messenger = DirectMessenger("168.235.86.101", "username", "password")
-#     messenger.send("hello","benP")
-#     messenger.send("shut up","benP")
-
-
-#     messenger = DirectMessenger("168.235.86.101", "benP", "waytomad")
-#     for message in messenger.retrieve_new():
-#       print(message)
-    
-#     print("---------")
-#     messenger = DirectMessenger("168.235.86.101", "username", "password")
-#     print(messenger.send("33","benP"))
-#     messenger = DirectMessenger("168.235.86.101", "benP", "waytomad")
-
-#     print(messenger.retrieve_new())
-#     # for message in messenger.retrieve_new():
-#     #   print(message)
-
-#     print("all")
-#     for message in messenger.retrieve_all():
-#       print(message)
