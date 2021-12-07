@@ -13,7 +13,7 @@ class DirectMessage(dict):
   '''
   DirectMessage class stores data pertaining to a direct message
   '''
-  def __init__(self,recipient = None, message = None, timestamp = None, sender = None):
+  def __init__(self,recipient:str = None, message:str = None, timestamp:float = None, sender:str = None):
     self.recipient = recipient
     self.message = message
     self.timestamp = timestamp
@@ -28,7 +28,7 @@ class DirectMessenger:
   '''
   DirectMessenger class represents a user who is using the messenging platform
   '''
-  def __init__(self, dsuserver=None, username=None, password=None):
+  def __init__(self, dsuserver:str = None, username:str = None, password:str = None):
     self.token = None
     self.dsuserver = dsuserver
     self.username = username
@@ -69,9 +69,8 @@ class DirectMessenger:
       self.client.connect((self.dsuserver,3021))
       self.f_send = self.client.makefile('w')
       self.f_recv = self.client.makefile('r')
-    except socket.error:
-      print("ERROR: Invalid socket connection/ip address")
-      return False
+    except socket.error as ex:
+      raise dsc.DsuClientError("Problem logging into the server",ex)
     
     if not self._write_command(dsp.encode_json("join", self.username,self.password), self.f_send): return False
     self.token = self._read_command(self.f_recv, login = False)

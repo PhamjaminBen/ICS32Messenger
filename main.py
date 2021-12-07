@@ -13,15 +13,18 @@
 # 53569186
 
 
-
+from json.decoder import JSONDecodeError
 from os import error
 import tkinter as tk
 from tkinter import ttk, filedialog, simpledialog, Label
-from tkinter.constants import N, W
+from tkinter.constants import N, NO, W
+from typing import Text
 from Profile import Post, Profile, Sender
 import time
-from ds_client import send
+from ds_client import send, DsuClientError
 from ds_messenger import DirectMessenger, DirectMessage
+from pathlib import Path
+import datetime
 
 
 class Body(tk.Frame):
@@ -46,8 +49,10 @@ class Body(tk.Frame):
         Update the entry_editor with the full post entry when the corresponding node in the senders_tree
         is selected.
         """
-        print(self.senders_tree.selection())
-        self.current_index = int(self.senders_tree.selection()[0])
+        try:
+          self.current_index = int(self.senders_tree.selection()[0])
+        except IndexError:
+          return #catches error when first opening file
         sender  = self._senders[self.current_index]
         self.process_messages(sender)
 
@@ -125,7 +130,7 @@ class Body(tk.Frame):
         """
         Inserts a sender entry into the senders_tree widget.
         """
-        #if sendername is too long, then cuti f off
+        #if sendername is too long, then cut if off
         if len(sender) > 25:
             sender = sender[:24] + "..."
         
@@ -169,12 +174,7 @@ class Footer(tk.Frame):
         self.root = root
         self._save_callback = save_callback
         self._sender_callback = sender_callback
-        # IntVar is a variable class that provides access to special variables
-        # for Tkinter widgets. is_online is used to hold the state of the chk_button widget.
-        # The value assigned to is_online when the chk_button widget is changed by the user
-        # can be retrieved using he get() function:
-        # chk_value = self.is_online.get()
-        self.is_online = tk.IntVar()
+
         # After all initialization is complete, call the _draw method to pack the widgets
         # into the Footer instance 
         self._draw()
@@ -219,13 +219,6 @@ class Footer(tk.Frame):
         sender_button.configure(command= self.sender_click)
         sender_button.pack(fill=tk.BOTH, side=tk.TOP, padx =5, pady=50)
 
-        # self.chk_button = tk.Checkbutton(master=self, text="Online", variable=self.is_online)
-        # self.chk_button.configure(command=self.online_click) 
-        # self.chk_button.pack(fill=tk.BOTH, side=tk.RIGHT)
-
-        # self.footer_label = tk.Label(master=self, text="Ready.")
-        # self.footer_label.pack(fill=tk.BOTH, side=tk.LEFT, padx=5)
-
         self.message_box = tk.Text(height= 5, width= 49)
         self.message_box.pack(fill=tk.BOTH, side=tk.RIGHT, expand=True, padx=10, pady=10)
 
@@ -239,7 +232,6 @@ class MainApp(tk.Frame):
     def __init__(self, root):
         tk.Frame.__init__(self, root)
         self.root = root
-
         # Initialize a new NaClProfile and assign it to a class attribute.
         self._current_profile = Profile()
 
@@ -256,26 +248,120 @@ class MainApp(tk.Frame):
         win.geometry('600x100')
         Label(win, text="ERROR").pack()
 
+        #draws window with the error message
         self.error_text = tk.Label(win, text=error)
         self.error_text.pack(fill=tk.BOTH, side=tk.TOP)
+    
+    def stat_win(self):
+      '''
+      Window popup intended to inform user about stats between senders
+      '''
+      try:
+        current_index = int(self.body.senders_tree.selection()[0])
+        sender  = self.body._senders[current_index]
+      except IndexError:
+        self.error_win("No sender currently selected")
+        return
+      
+      #calculating the first message sent
+      t1 = 999999999.0
+      t2 = 999999999.0
+      mintime = None
+      minmsg = None
+      try:
+        t1 = float(sender.sent[1].timestamp)
+      except IndexError: pass
+      try:
+        t2 = float(sender.messages[0].timestamp)
+      except IndexError: pass
+
+      if min(t1,t2) == 999999999.0:
+        mintime = "None"
+        minmsg1 = "None"
+        minmsg2 = "None"
+      else: 
+        mintime = datetime.datetime.fromtimestamp(min(t1,t2))
+        if t1 < t2:
+          minmsg1 = sender.sent[1].message
+          minmsg2 = sender.sent[1].sender
+        else:
+          minmsg1 = sender.messages[0].message
+          minmsg2 = sender.messages[0].sender
+
+      #calculating the latest message sent
+      t1 = 0.0
+      t2 = 0.0
+      maxtime = None
+      maxmsg = None
+      try:
+        t1 = float(sender.sent[-1].timestamp)
+      except IndexError: pass
+      try:
+        if sender.messages[-1].sender != "Server":
+          t2 = float(sender.messages[-1].timestamp)
+      except IndexError: pass
+
+      if max(t1,t2) == 0.0:
+        maxtime = "None"
+        maxmsg1 = "None"
+        maxmsg2 = "None"
+      else: 
+        maxtime = datetime.datetime.fromtimestamp(max(t1,t2))
+        if t1 > t2:
+          maxmsg1 = sender.sent[-1].message
+          maxmsg2 = sender.sent[-1].sender
+        else:
+          maxmsg1 = sender.messages[-1].message
+          maxmsg2 = sender.messages[-1].sender
+
+
+
+      win = tk.Toplevel(main)
+      win.title("Stats")
+      win.geometry('400x200')
+      Label(win, text = "STATS").pack
+      label = f"""
+      STATISTICS WITH: {sender.name}
+
+      Total messages exchanged: {len(sender.messages) + len(sender.sent)-1}
+      Messages sent by you: {len(sender.sent)-1}
+      Messages sent by {sender.name}: {len(sender.messages)}
+      First message: {minmsg1}, from {minmsg2}
+      First message time: {mintime}
+      Latest message: {maxmsg1}, from {maxmsg1}
+      Latest message time: {maxtime}
+      """
+      self.text = tk.Label(win,text = label)
+      self.text.pack(fill=tk.BOTH, side=tk.TOP)
     
     def new_profile(self):
         """
         Creates a new DSU file when the 'New' menu item is clicked.
+        Autogenerates username and password according to file name
         """
+        #makes it so that user doesn't need to enter file extension
         filename = tk.filedialog.asksaveasfile(filetypes=[('Distributed Social Profile', '*.dsu')],defaultextension=".dsu")
-        self.profile_filename = filename.name
+        try:
+          self.profile_filename = filename.name
+        except AttributeError:return #catches error if user exits file selection
 
-        # TODO Write code to perform whatever operations are necessary to prepare the UI for
-        # a new DSU file.
-        # HINT: You will probably need to do things like generate encryption keys and reset the ui.
         self.body.reset_ui()
         self._current_profile = Profile()
+
+        #autogenerates username and password
         name = self.profile_filename[self.profile_filename.rfind("/")+1:-4]
         self._current_profile.username = name
         self._current_profile.password = name + "password"
         self.messenger = DirectMessenger("168.235.86.101", self._current_profile.username,self._current_profile.password)
-        self._current_profile.save_profile(self.profile_filename)
+        #ensures valid username is created
+        try:
+           if not self.messenger.log_in():
+             self.error_win("Username is invalid")
+             return
+        except DsuClientError as ex:
+          self.error_win(str(ex))
+        else:
+          self._current_profile.save_profile(self.profile_filename)
     
     def open_profile(self):
         """
@@ -287,7 +373,7 @@ class MainApp(tk.Frame):
         try:
           self.profile_filename = filename.name
         except AttributeError:
-          return 
+          return
 
         self.body.reset_ui()
         self._current_profile = Profile()
@@ -296,7 +382,7 @@ class MainApp(tk.Frame):
         for message in self.messenger.retrieve_new():
             if message.sender not in self._current_profile.senders.keys():
               thing1 = []
-              thing2 = [DirectMessage("Server","Start of history",time.time(),self._current_profile.username)]
+              thing2 = [DirectMessage("Server","INITIALIZATION MSG",time.time(),self._current_profile.username)] #initialization message to prevent object copying problems
               sndr = Sender(message.sender,thing1,thing2)
               self._current_profile.senders[message.sender] = sndr
             self._current_profile.senders[message.sender].add_message(message)
@@ -310,7 +396,6 @@ class MainApp(tk.Frame):
         """                
         Closes the program when the 'Close' menu item is clicked.
         """
-        self._current_profile.save_profile(self.profile_filename)
         self.root.destroy()
 
     def send_message(self):
@@ -318,20 +403,21 @@ class MainApp(tk.Frame):
         Sends a message to the server
         """
         if self.footer.get_entry() != "":
-          # sender  = self.body._senders[self.body.current_index]
           try:
             sender  = self.body._senders[self.body.current_index]
           except AttributeError:
             self.error_win("Select a sender first, and make sure you have a file open")
-          else:
+            return
+          
+          try:
             sender  = self.body._senders[self.body.current_index]
             self.messenger.send(self.footer.get_entry(), sender.name)
             self._current_profile.senders[sender.name].add_sent(DirectMessage(sender.name,self.footer.get_entry(),time.time(),self._current_profile.username))
-            for mess in self._current_profile.senders[sender.name].sent:
-              print("MESSAGE",mess)
             self.body.set_text_entry(f'{self.body.get_text_entry()}\n{self._current_profile.username}: {self.footer.get_entry()}')
             self.footer.set_entry("")
             self._current_profile.save_profile(self.profile_filename)
+          except DsuClientError as ex:
+            self.error_win(str(ex))
 
         
     def add_sender(self):
@@ -344,16 +430,17 @@ class MainApp(tk.Frame):
       except AttributeError:
         self.error_win("please open a valid dsu file to use this function.")
         return
-
-      if usern == self._current_profile.username:
-        self.error_win("you can't message yourself!")
-        return
-      if usern not in self._current_profile.senders.keys():
-        thing1 = []
-        thing2 = [DirectMessage("Server","PLACEHOLDER MESSAGE TO PREVENT OBJECT REFERENCE PROBLEMS",time.time(),self._current_profile.username)] #PLACEHOLDER MESSAGE TO PREVENT OBJECT REFERENCE PROBLEMS
-        self._current_profile.senders[usern] = Sender(usern,thing1,thing2)
-        self.body.insert_sender(Sender(usern,thing1,thing2))
-      self._current_profile.save_profile(self.profile_filename)
+      try:
+        if usern == self._current_profile.username:
+          self.error_win("you can't message yourself!")
+          return
+        if usern not in self._current_profile.senders.keys():
+          thing1 = []
+          thing2 = [DirectMessage("Server","PLACEHOLDER MESSAGE TO PREVENT OBJECT REFERENCE PROBLEMS",time.time(),self._current_profile.username)] #PLACEHOLDER MESSAGE TO PREVENT OBJECT REFERENCE PROBLEMS
+          self._current_profile.senders[usern] = Sender(usern,thing1,thing2)
+          self.body.insert_sender(Sender(usern,thing1,thing2))
+        self._current_profile.save_profile(self.profile_filename)
+      except TypeError: pass #catches the error instance in which user cancels user selection
     
     def _draw(self):
         """
@@ -367,18 +454,12 @@ class MainApp(tk.Frame):
         menu_file.add_command(label='New', command=self.new_profile)
         menu_file.add_command(label='Open...', command=self.open_profile)
         menu_file.add_command(label='Close', command=self.close)
-        # NOTE: Additional menu items can be added by following the conventions here.
-        # The only top level menu item is a 'cascading menu', that presents a small menu of
-        # command items when clicked. But there are others. A single button or checkbox, for example,
-        # could also be added to the menu bar. 
+        menu_file.add_command(label='Stats', command=self.stat_win)
 
         # The Body and Footer classes must be initialized and packed into the root window.
         self.body = Body(self.root, self._current_profile)
         self.body.pack(fill=tk.BOTH, side=tk.TOP, expand=True)
         
-        # TODO: Add a callback for detecting changes to the online checkbox widget in the Footer class. Follow
-        # the conventions established by the existing save_callback parameter.
-        # HINT: There may already be a class method that serves as a good callback function!
         self.footer = Footer(self.root, save_callback=self.send_message, sender_callback= self.add_sender)
         self.footer.pack(fill=tk.BOTH, side=tk.BOTTOM)
     
@@ -389,7 +470,7 @@ class MainApp(tk.Frame):
       '''
       try:
         new_msgs = self.messenger.retrieve_new()
-      except: pass
+      except AttributeError: pass #cathces error that happens when the check is called but no file is opened 
       else:
         if len(new_msgs) != None:
           for message in new_msgs:
@@ -400,6 +481,7 @@ class MainApp(tk.Frame):
               self._current_profile.senders[message.sender] = sndr
               self.body.insert_sender(sndr)
             self._current_profile.senders[message.sender].add_message(message)
+
             #Refreshes the current selected recipient so that if new messages are sent it can show client in real time
             try:
               current_index = int(self.body.senders_tree.selection()[0])

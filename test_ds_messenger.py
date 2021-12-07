@@ -1,4 +1,5 @@
 import unittest
+from ds_client import DsuClientError
 from ds_messenger import DirectMessenger, DirectMessage 
 import time
 
@@ -14,8 +15,13 @@ class CommandTestBase(unittest.TestCase):
 
   def test_direct_messenger(self):
     #sending to an invalid server
+    thing = False
     sender = DirectMessenger("invalidserver", "username", "password")
-    self.assertEqual(False,sender.send("hello","benP"))
+    try:
+      sender.send("hello","benP")
+    except DsuClientError:
+      thing = True
+    self.assertEqual(thing,True)
     sender.client.close()
 
     #sending to valid server

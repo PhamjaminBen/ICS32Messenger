@@ -24,20 +24,16 @@ from pathlib import Path
 from typing import List
 from ds_messenger import DirectMessage
 
-"""
-DsuFileError is a custom exception handler that you should catch in your own code. It
-is raised when attempting to load or save Profile objects to file the system.
-
-"""
 class DsuFileError(Exception):
+    """
+    DsuFileError is a custom exception handler that is raised when attempting to load or save Profile objects to file the system.
+    """
     pass
 
-"""
-DsuProfileError is a custom exception handler that you should catch in your own code. It
-is raised when attempting to deserialize a dsu file to a Profile object.
-
-"""
 class DsuProfileError(Exception):
+    """
+    DsuProfileError is a custom exception handler that is raised when attempting to deserialize a dsu file to a Profile object.
+    """
     pass
 
 
@@ -210,7 +206,6 @@ class Profile:
             try:
                 f = open(p, 'r')
                 obj = json.load(f)
-                print(obj)
                 self.username = obj['username']
                 self.password = obj['password']
                 self.dsuserver = obj['dsuserver']
@@ -236,13 +231,5 @@ class Profile:
                 raise DsuProfileError(ex)
         else:
             raise DsuFileError()
-
-# if __name__ == "__main__":
-#   p = Profile()
-#   p.senders['andy'] = Sender("andy")
-#   p.senders['andy'].add_sent(DirectMessage("andy","hello",time.time(),"ben"))
-#   p.save_profile("C:/Users/BPPC/Downloads/FINALTEST/tester.dsu")
-#   p.load_profile("C:/Users/BPPC/Downloads/FINALTEST/tester.dsu")
-#   print(p.senders)
 
 
