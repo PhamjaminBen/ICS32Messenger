@@ -1,4 +1,5 @@
 Welcome to the final project for ICS32 By Benjamin Pham
+Code template for tkintker proveded by Mark Baldwin at UCI.
 
 ALL PDOCS WILL BE IN THE __PDOCS__ FOLDER
 
